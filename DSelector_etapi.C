@@ -491,10 +491,11 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		Bool_t locSkipNearestOutOfTimeBunch = true; // True: skip events from nearest out-of-time bunch on either side (recommended).
 		Int_t locNumOutOfTimeBunchesToUse = locSkipNearestOutOfTimeBunch ? locNumOutOfTimeBunchesInTree-1:locNumOutOfTimeBunchesInTree; 
 		// Ideal value would be 1, but deviations require added factor, which is different for data and MC.
-		float locAccidentalScalingFactor = (float)(dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC)); 
-		float locAccidentalScalingFactorError = (float)(dAnalysisUtilities.Get_AccidentalScalingFactorError(Get_RunNumber(), locBeamP4.E())); 
+		// float locAccidentalScalingFactor = (float)(dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC)); 
+		// float locAccidentalScalingFactorError = (float)(dAnalysisUtilities.Get_AccidentalScalingFactorError(Get_RunNumber(), locBeamP4.E())); 
 		// Weight by 1 for in-time events, ScalingFactor*(1/NBunches) for out-of-time
-		float locHistAccidWeightFactor = (float)(locRelBeamBucket==0 ? 1 : -locAccidentalScalingFactor/(2*locNumOutOfTimeBunchesToUse)) ; 
+		float locHistAccidWeightFactor = 1;
+		// (float)(locRelBeamBucket==0 ? 1 : -locAccidentalScalingFactor/(2*locNumOutOfTimeBunchesToUse)) ; 
 		if((locSkipNearestOutOfTimeBunch && abs(locRelBeamBucket)==1) || abs(locDeltaT_RF)>4*(locNumOutOfTimeBunchesInTree+1)) { 
                     // Skip nearest out-of-time bunch: tails of in-time distribution also leak in
                     // Sometimes we get RF times that are very large, like O(10^5). Lets just keep times within an extra bunch 
@@ -511,7 +512,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		// 	as given for now
 		float Mpi0=locPi0P4.M();
 		float Meta=locEtaP4.M();
-		float pi0Mean=0.135881;
+		float pi0Mean=0.135881; //GlueX Phase-1
 		float etaMean=0.548625;
 		float pi0Std=0.0076;
 		float etaStd=0.0191;

@@ -28,17 +28,22 @@ proof_Nthreads=36
 recon_cfiles=["DSelector_etapi.C", "runDSelector.C"]
 thrown_cfiles=["DSelector_thrown.C", "runDSelector_thrown.C"]
 
-reconTreeName="pi0eta__B4_M17_M7_Tree"
+reconTreeName="pi0eta__B4_M7_M17_Tree"
+# reconTreeName="pi0eta__B4_M17_M7_Tree"
 thrownTreeName="Thrown_Tree"
 
 #tag="_sbL_accN"
-tag="_sidebandStudy"
+tag="2019"
 #tag=""
 
+# PHASE 2 (2019)
+
+runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4_M7_M17/merged/tree_pi0eta__B4_M7_M17*"',reconTreeName,tag,3,proof_Nthreads,recon_cfiles)
+
 ### PHASE 1 MONTE CARLO
-#runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2017_1_130M/merged/tree_pi0eta*"',reconTreeName,"F2017_1_selected"+tag,3,proof_Nthreads,recon_cfiles)
-runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2018_1_400M/merged/tree_pi0eta*"',reconTreeName,"F2018_1_selected"+tag,3,proof_Nthreads,recon_cfiles)
-runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2018_8_260M_130M/merged/tree_pi0eta*"',reconTreeName,"F2018_8_selected"+tag,3,proof_Nthreads,recon_cfiles)
+# runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2017_1_130M/merged/tree_pi0eta*"',reconTreeName,"F2017_1_selected"+tag,3,proof_Nthreads,recon_cfiles)
+# runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2018_1_400M/merged/tree_pi0eta*"',reconTreeName,"F2018_1_selected"+tag,3,proof_Nthreads,recon_cfiles)
+# runSelector('"/d/grid17/ln16/rootFiles/pi0eta/120921/2018_8_260M_130M/merged/tree_pi0eta*"',reconTreeName,"F2018_8_selected"+tag,3,proof_Nthreads,recon_cfiles)
 
 ### PHASE 1 b1 MC
 #runSelector('"/d/grid17/ln16/rootFiles/omegapi_rad_massDepFit_2017_01_ver03.0/root/merged/tree_pi0eta*"',
