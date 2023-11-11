@@ -26,7 +26,9 @@ const TString dataTag = "2019_11";
 // user config for plotting from flat trees
 const Int_t NBranchFlatTree = 7;
 const TString branchFlatTree[NBranchFlatTree] = {"Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","weightASBS"};
+enum brVar{Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,weightASBS};
 Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0};
+
 const Bool_t isOpenFlatTrees = kTRUE;
 const Bool_t isPlotVanHopeAngle = kTRUE;
 const Bool_t isPlotMPi0Eta = kTRUE;
@@ -46,7 +48,6 @@ const TString strFitFracWave = "D";
 const Bool_t isPlotA2CS = kFALSE;
 const TString etaPiPlotterOutLogName = "etapi_plotter_output.log";
 const Double_t lum = 132.4; // pb^-1
-
 const Bool_t isStudyGenMC = kFALSE;
 
 // waves=["S0+-_S0++",
@@ -55,22 +56,6 @@ const Bool_t isStudyGenMC = kFALSE;
 //        "D1--_D0+-_D1+-_D0++_D1++_D2++_pD1--_pD0+-_pD1+-_pD0++_pD1++_pD2++",
 //        "S0+-_S0++_D1--_D0+-_D1+-_D0++_D1++_D2++_pD1--_pD0+-_pD1+-_pD0++_pD1++_pD2++"
 //       ]
-// TString rootFlatTreeSignal[NPol] = {"pol000_t010020_m104172_test_D2019_11_selected_data_flat.root",
-//                                 "pol045_t010020_m104172_test_D2019_11_selected_data_flat.root",
-//                                 "pol090_t010020_m104172_test_D2019_11_selected_data_flat.root",
-//                                 "pol135_t010020_m104172_test_D2019_11_selected_data_flat.root"};
-// TString rootFlatTreeBkgnd[NPol] = {"pol000_t010020_m104172_test_D2019_11_selected_bkgnd_flat.root",
-//                                 "pol045_t010020_m104172_test_D2019_11_selected_bkgnd_flat.root",
-//                                 "pol090_t010020_m104172_test_D2019_11_selected_bkgnd_flat.root",
-//                                 "pol135_t010020_m104172_test_D2019_11_selected_bkgnd_flat.root"};
-// TString rootFlatTreeMCRecon[NPol] = {"pol000_t010020_m104172_test_F2019_11_selected_acc_flat.root",
-//                                 "pol045_t010020_m104172_test_F2019_11_selected_acc_flat.root",
-//                                 "pol090_t010020_m104172_test_F2019_11_selected_acc_flat.root",
-//                                 "pol135_t010020_m104172_test_F2019_11_selected_acc_flat.root"};
-// TString rootFlatTreeMCThrown[NPol] = {"pol000_t010020_m104172_test_F2019_11_selected_gen_flat.root",
-//                                 "pol045_t010020_m104172_test_F2019_11_selected_gen_flat.root",
-//                                 "pol090_t010020_m104172_test_F2019_11_selected_gen_flat.root",
-//                                 "pol135_t010020_m104172_test_F2019_11_selected_gen_flat.root"};
 
 void gluex_style();
 void AssignSelectedBranches(TTree *tTree,const TString branchName[],Float_t branchVar[]);
@@ -83,6 +68,7 @@ void drawHist(){
 
     vector<vector<TString>> rootFlatTreeSignal;
     vector<vector<TString>> rootFlatTreeBkgnd;
+    vector<vector<TString>> rootFlatTreeRecon;
     vector<vector<TString>> rootFlatTreeMCRecon;
     vector<vector<TString>> rootFlatTreeMCThrown;
     
@@ -100,17 +86,20 @@ void drawHist(){
         for (auto polstrs: polString) {
             vector<TString> rootFlatTreeSignalTemp;
             vector<TString> rootFlatTreeBkgndTemp;
+            vector<TString> rootFlatTreeReconTemp;
             vector<TString> rootFlatTreeMCReconTemp;
             vector<TString> rootFlatTreeMCThrownTemp;
             for (auto tbinstrs: tBinString) {
                 TString dirTemp = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+extraTag+"/";
                 rootFlatTreeSignalTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_data_flat.root");
                 rootFlatTreeBkgndTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_bkgnd_flat.root");
+                rootFlatTreeReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_acc_flat.root");
                 rootFlatTreeMCReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_selected_acc_flat.root");
                 rootFlatTreeMCThrownTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_selected_gen_flat.root");
             }
             rootFlatTreeSignal.push_back(rootFlatTreeSignalTemp);
             rootFlatTreeBkgnd.push_back(rootFlatTreeBkgndTemp);
+            rootFlatTreeRecon.push_back(rootFlatTreeReconTemp);
             rootFlatTreeMCRecon.push_back(rootFlatTreeMCReconTemp);
             rootFlatTreeMCThrown.push_back(rootFlatTreeMCThrownTemp);
         }
@@ -185,14 +174,14 @@ void drawHist(){
 
                 for (Int_t iEvent=0;iEvent<tFlatTreeSignal->GetEntries();iEvent++){
                     tFlatTreeSignal->GetEntry(iEvent);
-                    cout << branchVar[0] << " " << branchVar[6] << endl;
+                    // cout << branchVar[Mpi0eta] << " " << branchVar[weightASBS] << endl;
                     if (isPlotVanHopeAngle) {
-                        h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Fill(branchVar[0],branchVar[2],branchVar[6]);
-                        h2_VanHove_XY_sig[iPol][iTBin]->Fill(branchVar[3],branchVar[4],branchVar[6]);
-                        h1_Mpi0p_sig[iPol][iTBin]->Fill(branchVar[1],branchVar[6]);
-                        if ((Bool_t)branchVar[5]) h1_Mpi0p_pVH_sig[iPol][iTBin]->Fill(branchVar[1],branchVar[6]);
+                        h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
+                        h2_VanHove_XY_sig[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
+                        h1_Mpi0p_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                        if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
                     }
-                    if (isPlotMPi0Eta) h1_Mpi0eta_sig[iPol][iTBin]->Fill(branchVar[0],branchVar[6]);
+                    if (isPlotMPi0Eta) h1_Mpi0eta_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
                 }
 
                 TTree *tFlatTreeBkgnd = (TTree*)fFlatTreeBkgnd[iPol][iTBin]->Get("kin");
@@ -201,12 +190,12 @@ void drawHist(){
                 for (Int_t iEvent=0;iEvent<tFlatTreeBkgnd->GetEntries();iEvent++){
                     tFlatTreeBkgnd->GetEntry(iEvent);
                     if (isPlotVanHopeAngle) {
-                        h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]->Fill(branchVar[0],branchVar[2],branchVar[6]);
-                        h2_VanHove_XY_bkg[iPol][iTBin]->Fill(branchVar[3],branchVar[4],branchVar[6]);
-                        h1_Mpi0p_bkg[iPol][iTBin]->Fill(branchVar[1],branchVar[6]);
-                        if ((Bool_t)branchVar[5]) h1_Mpi0p_pVH_bkg[iPol][iTBin]->Fill(branchVar[1],branchVar[6]);
+                        h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
+                        h2_VanHove_XY_bkg[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
+                        h1_Mpi0p_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                        if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
                     }
-                    if (isPlotMPi0Eta) h1_Mpi0eta_bkg[iPol][iTBin]->Fill(branchVar[0],branchVar[6]);
+                    if (isPlotMPi0Eta) h1_Mpi0eta_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
                 }
            
                 if (isPlotVanHopeAngle) {
@@ -415,7 +404,7 @@ void etaPiPlotter(TString dirFit, TString fitName, TString outName, TString ampS
     gSystem->Exec(cmdCheckNan);
 
     // if there is replace nan with zeros
-    TString cmdReplaceNan = "sed -i 's/nan/0.00001/g' " + fitName;
+    TString cmdReplaceNan = "sed -i 's/nan/0.1/g' " + fitName;
     cout << "Running command: " << cmdReplaceNan << endl;
     gSystem->Exec(cmdReplaceNan);
 
