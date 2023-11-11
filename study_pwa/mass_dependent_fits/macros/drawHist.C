@@ -66,11 +66,15 @@ void drawHist(){
     gluex_style();
     gROOT->ForceStyle();
 
+    gluex_style();
+    gROOT->ForceStyle();
+
     vector<vector<TString>> rootFlatTreeSignal;
     vector<vector<TString>> rootFlatTreeBkgnd;
     vector<vector<TString>> rootFlatTreeRecon;
     vector<vector<TString>> rootFlatTreeMCRecon;
     vector<vector<TString>> rootFlatTreeMCThrown;
+    
     
     vector<TString> fitResultDir;
     for (auto tbinstr: tBinString) fitResultDir.push_back(mainDir+tbinstr+"_0/");
@@ -104,6 +108,24 @@ void drawHist(){
             rootFlatTreeMCThrown.push_back(rootFlatTreeMCThrownTemp);
         }
 
+        // open flat trees
+        TFile *fFlatTreeSignal[NPol][NTBin];
+        TFile *fFlatTreeBkgnd[NPol][NTBin];
+        TFile *fFlatTreeMCRecon[NPol][NTBin];
+        TFile *fFlatTreeMCThrown[NPol][NTBin];
+
+        cout << endl << endl << "Opening flat trees:" << endl;
+        for (Int_t iPol=0;iPol<NPol;iPol++){
+            cout << endl << "=============================" << polString[iPol] << "=============================" << endl;
+            for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
+                cout << rootFlatTreeSignal[iPol][iTBin] << endl;
+                fFlatTreeSignal[iPol][iTBin] = TFile::Open(rootFlatTreeSignal[iPol][iTBin], "READ");
+                cout << rootFlatTreeBkgnd[iPol][iTBin] << endl;
+                fFlatTreeBkgnd[iPol][iTBin] = TFile::Open(rootFlatTreeBkgnd[iPol][iTBin], "READ");
+                cout << rootFlatTreeMCRecon[iPol][iTBin] << endl;
+                cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
+            }
+        }
         // open flat trees
         TFile *fFlatTreeSignal[NPol][NTBin];
         TFile *fFlatTreeBkgnd[NPol][NTBin];
@@ -293,6 +315,35 @@ void drawHist(){
     // TFile *fFlatTreeMCRecon[NPol];
     // TFile *fFlatTreeMCThrown[NPol];
 
+    if (isPlotWaves) {
+        // open root files from etapi_plotter
+        TFile *fHistFitResult[NTBin];
+        cout << endl << endl << "Opening root files from etapi_plotter:" << endl;
+        for (Int_t iTBin=0;iTBin<NTBin;iTBin++) {
+            cout << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
+            TString rootFileName = fitResultDir[iTBin] + etaPiPlotterOutName + "_" + strWave + ".root";
+            cout << "File: " << rootFileName <<  endl;
+            fHistFitResult[iTBin] = TFile::Open(rootFileName, "READ");
+        }
+        c1->Clear();
+        c1->Divide(3,2);
+        c1->SetCanvasSize(1600,1200);
+        for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
+            c1->cd(iTBin+1);
+            TH1F *h1MEtaPiAcc[NPol];
+            TH1F *h1MEtaPiAccSum;
+            TH1F *h1MEtaPiSig[NPol];
+            TH1F *h1MEtaPiSigSum;
+            TH1F *h1MEtaPiBkg[NPol];
+            TH1F *h1MEtaPiBkgSum;
+            for (Int_t iPol=0;iPol<NPol;iPol++){
+                // fFlatTreeSignal[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeSignal[iPol], "READ");
+                // fFlatTreeBkgnd[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeBkgnd[iPol], "READ");
+                // fFlatTreeMCRecon[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeMCRecon[iPol], "READ");
+                // fFlatTreeMCThrown[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeMCThrown[iPol], "READ");
+                h1MEtaPiAcc[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMEtaPiAccName);
+                h1MEtaPiSig[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMEtaPiSigName);
+                h1MEtaPiBkg[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMetaPiBkgName);
     if (isPlotWaves) {
         // open root files from etapi_plotter
         TFile *fHistFitResult[NTBin];
