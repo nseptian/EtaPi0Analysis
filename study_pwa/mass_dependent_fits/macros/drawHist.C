@@ -5,14 +5,15 @@ const TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_d
 const Int_t NPol = 4;
 const TString polString[NPol] = {"pol000", "pol045", "pol090", "pol135"};
 
-const Int_t NTBin = 5;
-const TString tBinString[NTBin] = {"010020","0200325","0325050","050075","075100"};
-const Float_t tMin[NTBin] = {0.1,0.2,0.325,0.5,0.75};
-const Float_t tMax[NTBin] = {0.2,0.325,0.5,0.75,1.0};
-// const Int_t NTBin = 1;
-// const TString tBinString[NTBin] = {"0325050"};
-// const Float_t tMin[NTBin] = {0.325};
-// const Float_t tMax[NTBin] = {0.5};
+// const Int_t NTBin = 5;
+// const TString tBinString[NTBin] = {"010020","0200325","0325050","050075","075100"};
+// const Float_t tMin[NTBin] = {0.1,0.2,0.325,0.5,0.75};
+// const Float_t tMax[NTBin] = {0.2,0.325,0.5,0.75,1.0};
+
+const Int_t NTBin = 1;
+const TString tBinString[NTBin] = {"010020"};
+const Float_t tMin[NTBin] = {0.1};
+const Float_t tMax[NTBin] = {0.2};
 
 // const Int_t NTBin = 5;
 // const TString tBinString[NTBin] = {"010020","020030","030040","040050","050060"};
@@ -20,8 +21,13 @@ const Float_t tMax[NTBin] = {0.2,0.325,0.5,0.75,1.0};
 // const Float_t tMax[NTBin] = {0.2,0.3,0.4,0.5,0.6};
 
 const TString mBinString = "m104172";
+
 const TString extraTag = "test1";
 const TString dataTag = "2019_11";
+
+// add phase 1 dataset (from Lawrence) for comparison 
+const TString extraTagPhase1 = "nominal_wPhotonSyst";
+const TString dataTagPhase1 = "Phase1";
 
 // user config for plotting from flat trees
 const Int_t NBranchFlatTree = 8;
@@ -68,7 +74,7 @@ class Hist1DManager {
     public:
         Hist1DManager();
         ~Hist1DManager();
-        void Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName="");
+        void Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName);
         void Add(TH1F* h1, brVar brVar, Int_t nBinsX, Float_t xMin, Float_t xMax);
         TH1F* GetHist(Int_t idxHist) {return vh1[idxHist];}
         void FillFromTree(TTree *tTree);
@@ -99,9 +105,13 @@ Hist1DManager::~Hist1DManager() {
     for (Int_t iHist=0;iHist<NHist;iHist++) delete vh1[iHist];
 }
 
-void Hist1DManager::Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName="") {
+void Hist1DManager::Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName) {
     vh1.push_back(new TH1F(Form("h1_%s_%s",branchFlatTree[brVar].Data(),extraName.Data()),Form("%s",XTitle.Data()),nBinsX,xMin,xMax));
     vh1[NHist]->GetXaxis()->SetTitle(XTitle);
+    TString strYTitle = "Events";
+    if ((brVar==Mpi0eta) || (brVar==Mpi0p)) strYTitle += Form(" / %0.2f MeV",vh1[NHist]->GetBinWidth(1)*1000.0);
+    vh1[NHist]->GetYaxis()->SetTitle(strYTitle);
+    vh1[NHist]->GetYaxis()->SetRangeUser(0.0,1.2*vh1[NHist]->GetMaximum());
     vBrVar.push_back(brVar);
     vBrName.push_back(branchFlatTree[brVar]);
     vNBinsX.push_back(nBinsX);
@@ -173,7 +183,7 @@ class Hist2DManager {
     public:
         Hist2DManager();
         ~Hist2DManager();
-        void Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName="");
+        void Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName);
         void Add(TH2F* h2, brVar brVarX, brVar brVarY, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax);
         TH2F* GetHist(Int_t idxHist) {return vh2[idxHist];}
         void FillFromTree(TTree *tTree);
@@ -214,7 +224,7 @@ Hist2DManager::~Hist2DManager() {
     for (Int_t iHist=0;iHist<NHist;iHist++) delete vh2[iHist];
 }
 
-void Hist2DManager::Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName="") {
+void Hist2DManager::Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName) {
     vh2.push_back(new TH2F(Form("h2_%s_%s_%s",branchFlatTree[brVarX].Data(),branchFlatTree[brVarY].Data(),extraName.Data()),Form("%s vs %s",XTitle.Data(),YTitle.Data()),nBinsX,xMin,xMax,nBinsY,yMin,yMax));
     vh2[NHist]->GetXaxis()->SetTitle(XTitle);
     vh2[NHist]->GetYaxis()->SetTitle(YTitle);
@@ -295,16 +305,16 @@ void Hist2DManager::PrintHistSum(TString fileName, TString drawOption, Int_t can
 }
 
 void drawHist(){
-    // gluex_style();
-    // gROOT->ForceStyle();
-    gStyle->SetOptStat(0);
+    gluex_style();
+    gROOT->ForceStyle();
 
     vector<vector<TString>> rootFlatTreeSignal;
     vector<vector<TString>> rootFlatTreeBkgnd;
     vector<vector<TString>> rootFlatTreeRecon;
     vector<vector<TString>> rootFlatTreeMCRecon;
     vector<vector<TString>> rootFlatTreeMCThrown;
-    
+
+    vector<vector<TString>> rootFlatTreeReconPhase1;
     
     vector<TString> fitResultDir;
     for (auto tbinstr: tBinString) fitResultDir.push_back(mainDir+tbinstr+"_0/");
@@ -324,6 +334,9 @@ void drawHist(){
             vector<TString> rootFlatTreeReconTemp;
             vector<TString> rootFlatTreeMCReconTemp;
             vector<TString> rootFlatTreeMCThrownTemp;
+
+            vector<TString> rootFlatTreeReconPhase1Temp;
+
             for (auto tbinstrs: tBinString) {
                 TString dirTemp = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+extraTag+"/";
                 rootFlatTreeSignalTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_data_flat.root");
@@ -331,12 +344,16 @@ void drawHist(){
                 rootFlatTreeReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_acc_flat.root");
                 rootFlatTreeMCReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_selected_acc_flat.root");
                 rootFlatTreeMCThrownTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_selected_gen_flat.root");
+
+                TString dirTempPhase1 = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_"+extraTagPhase1+"/";
+                rootFlatTreeReconPhase1Temp.push_back(dirTempPhase1+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_selected_"+extraTagPhase1+"_acc_flat.root");
             }
             rootFlatTreeSignal.push_back(rootFlatTreeSignalTemp);
             rootFlatTreeBkgnd.push_back(rootFlatTreeBkgndTemp);
             rootFlatTreeRecon.push_back(rootFlatTreeReconTemp);
             rootFlatTreeMCRecon.push_back(rootFlatTreeMCReconTemp);
             rootFlatTreeMCThrown.push_back(rootFlatTreeMCThrownTemp);
+            rootFlatTreeReconPhase1.push_back(rootFlatTreeReconPhase1Temp);
         }
 
         // open flat trees
@@ -345,6 +362,8 @@ void drawHist(){
         TFile *fFlatTreeRecon[NPol][NTBin];
         TFile *fFlatTreeMCRecon[NPol][NTBin];
         TFile *fFlatTreeMCThrown[NPol][NTBin];
+
+        TFile *fFlatTreeReconPhase1[NPol][NTBin];
 
         cout << endl << endl << "Opening flat trees:" << endl;
         for (Int_t iPol=0;iPol<NPol;iPol++){
@@ -358,6 +377,8 @@ void drawHist(){
                 fFlatTreeRecon[iPol][iTBin] = TFile::Open(rootFlatTreeRecon[iPol][iTBin], "READ");
                 // cout << rootFlatTreeMCRecon[iPol][iTBin] << endl;
                 // cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
+                cout << rootFlatTreeReconPhase1[iPol][iTBin] << endl;
+                fFlatTreeReconPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeReconPhase1[iPol][iTBin], "READ");
             }
         }
 
@@ -389,86 +410,94 @@ void drawHist(){
         c2->Divide(3,2,0.0,0.0);
         c_Mpi0Eta->Divide(3,2);
         for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
-            cout << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
+            // manager for histograms for polarization sum
+            Hist1DManager *h1ManagerMpieta = new Hist1DManager();
+            Hist1DManager *h1ManagerCosThetaGJ = new Hist1DManager();
             Hist2DManager *h2ManagerMpi0etaPol = new Hist2DManager();
+
+            Hist1DManager *h1ManagerMpietaPhase1 = new Hist1DManager();
+            Hist1DManager *h1ManagerCosThetaGJPhase1 = new Hist1DManager();
+            Hist2DManager *h2ManagerMpietaPolPhase1 = new Hist2DManager();
+
+            cout << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
             for (Int_t iPol=0;iPol<NPol;iPol++){
                 cout << endl << "=============================" << polString[iPol] << "=============================" << endl;
                 cout << rootFlatTreeSignal[iPol][iTBin] << endl;
 
-                TTree *tFlatTreeSignal = (TTree*)fFlatTreeSignal[iPol][iTBin]->Get("kin");
+                // TTree *tFlatTreeSignal = (TTree*)fFlatTreeSignal[iPol][iTBin]->Get("kin");
+                // AssignSelectedBranches(tFlatTreeSignal, branchFlatTree, branchVar);
 
-                AssignSelectedBranches(tFlatTreeSignal, branchFlatTree, branchVar);
-                if (isPlotVanHopeAngle) {
-                    h2_Mpi0Eta_VanHove_sig[iPol][iTBin] = new TH2F(Form("h2_Mpi0Eta_VanHove_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} vs Van Hove angle (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,1.04,1.72,100,210,330);
-                    h2_VanHove_XY_sig[iPol][iTBin] = new TH2F(Form("h2_VanHove_XY_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("Van Hove X vs Y (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,-2.0,2.0,100,-2.0,2.0);
-                    h2_Mpi0Eta_VanHove_bkg[iPol][iTBin] = new TH2F(Form("h2_Mpi0Eta_VanHove_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} vs Van Hove angle (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,1.04,1.72,100,210,330);
-                    h2_VanHove_XY_bkg[iPol][iTBin] = new TH2F(Form("h2_VanHove_XY_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("Van Hove X vs Y (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,-2.0,2.0,100,-2.0,2.0);
-                    h1_Mpi0p_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
-                    h1_Mpi0p_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
-                    h1_Mpi0p_pVH_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_pVH_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
-                    h1_Mpi0p_pVH_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_pVH_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
-                }
+                // if (isPlotVanHopeAngle) {
+                //     h2_Mpi0Eta_VanHove_sig[iPol][iTBin] = new TH2F(Form("h2_Mpi0Eta_VanHove_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} vs Van Hove angle (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,1.04,1.72,100,210,330);
+                //     h2_VanHove_XY_sig[iPol][iTBin] = new TH2F(Form("h2_VanHove_XY_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("Van Hove X vs Y (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,-2.0,2.0,100,-2.0,2.0);
+                //     h2_Mpi0Eta_VanHove_bkg[iPol][iTBin] = new TH2F(Form("h2_Mpi0Eta_VanHove_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} vs Van Hove angle (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,1.04,1.72,100,210,330);
+                //     h2_VanHove_XY_bkg[iPol][iTBin] = new TH2F(Form("h2_VanHove_XY_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("Van Hove X vs Y (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,-2.0,2.0,100,-2.0,2.0);
+                //     h1_Mpi0p_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
+                //     h1_Mpi0p_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
+                //     h1_Mpi0p_pVH_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_pVH_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
+                //     h1_Mpi0p_pVH_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0p_pVH_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{pi^{0}p} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),250,1.0,3.5);
+                // }
 
-                if (isPlotMPi0Eta) {
-                    h1_Mpi0eta_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0Eta_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),17,1.04,1.72);
-                    h1_Mpi0eta_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0Eta_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),17,1.04,1.72);
-                }
+                // if (isPlotMPi0Eta) {
+                //     h1_Mpi0eta_sig[iPol][iTBin] = new TH1F(Form("h1_Mpi0Eta_sig_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),17,1.04,1.72);
+                //     h1_Mpi0eta_bkg[iPol][iTBin] = new TH1F(Form("h1_Mpi0Eta_bkg_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),17,1.04,1.72);
+                // }
 
-                for (Int_t iEvent=0;iEvent<tFlatTreeSignal->GetEntries();iEvent++){
-                    tFlatTreeSignal->GetEntry(iEvent);
-                    // cout << branchVar[Mpi0eta] << " " << branchVar[weightASBS] << endl;
-                    if (isPlotVanHopeAngle) {
-                        h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
-                        h2_VanHove_XY_sig[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
-                        h1_Mpi0p_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
-                        if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
-                    }
-                    if (isPlotMPi0Eta) h1_Mpi0eta_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
-                }
+                // for (Int_t iEvent=0;iEvent<tFlatTreeSignal->GetEntries();iEvent++){
+                //     tFlatTreeSignal->GetEntry(iEvent);
+                //     // cout << branchVar[Mpi0eta] << " " << branchVar[weightASBS] << endl;
+                //     if (isPlotVanHopeAngle) {
+                //         h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
+                //         h2_VanHove_XY_sig[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
+                //         h1_Mpi0p_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                //         if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_sig[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                //     }
+                //     if (isPlotMPi0Eta) h1_Mpi0eta_sig[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
+                // }
 
-                TTree *tFlatTreeBkgnd = (TTree*)fFlatTreeBkgnd[iPol][iTBin]->Get("kin");
-                AssignSelectedBranches(tFlatTreeBkgnd, branchFlatTree, branchVar);
+                // TTree *tFlatTreeBkgnd = (TTree*)fFlatTreeBkgnd[iPol][iTBin]->Get("kin");
+                // AssignSelectedBranches(tFlatTreeBkgnd, branchFlatTree, branchVar);
 
-                for (Int_t iEvent=0;iEvent<tFlatTreeBkgnd->GetEntries();iEvent++){
-                    tFlatTreeBkgnd->GetEntry(iEvent);
-                    if (isPlotVanHopeAngle) {
-                        h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
-                        h2_VanHove_XY_bkg[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
-                        h1_Mpi0p_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
-                        if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
-                    }
-                    if (isPlotMPi0Eta) h1_Mpi0eta_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
-                }
+                // for (Int_t iEvent=0;iEvent<tFlatTreeBkgnd->GetEntries();iEvent++){
+                //     tFlatTreeBkgnd->GetEntry(iEvent);
+                //     if (isPlotVanHopeAngle) {
+                //         h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[vanHove_omega],branchVar[weightASBS]);
+                //         h2_VanHove_XY_bkg[iPol][iTBin]->Fill(branchVar[vanHove_x],branchVar[vanHove_y],branchVar[weightASBS]);
+                //         h1_Mpi0p_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                //         if ((Bool_t)branchVar[pVH]) h1_Mpi0p_pVH_bkg[iPol][iTBin]->Fill(branchVar[Mpi0p],branchVar[weightASBS]);
+                //     }
+                //     if (isPlotMPi0Eta) h1_Mpi0eta_bkg[iPol][iTBin]->Fill(branchVar[Mpi0eta],branchVar[weightASBS]);
+                // }
            
-                if (isPlotVanHopeAngle) {
-                    h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Add(h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]);
-                    h2_VanHove_XY_sig[iPol][iTBin]->Add(h2_VanHove_XY_bkg[iPol][iTBin]);
-                    gSystem->cd(fitResultDir[iTBin]);
-                    // h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Draw("COLZ");
-                    // c1->SaveAs(Form("plot_Mpi0Eta_VanHove_sig_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
-                    // h2_VanHove_XY_sig[iPol][iTBin]->Draw("COLZ");
-                    // c1->SaveAs(Form("plot_VanHove_XY_sig_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
-                    if (!iPol) {
-                        h2_Mpi0Eta_VanHove_sum[iTBin] = (TH2F*)h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Clone();
-                        h2_VanHove_XY_sum[iTBin] = (TH2F*)h2_VanHove_XY_sig[iPol][iTBin]->Clone();
-                        h1_Mpi0p_sum[iTBin] = (TH1F*)h1_Mpi0p_sig[iPol][iTBin]->Clone();
-                        h1_Mpi0p_pVH_sum[iTBin] = (TH1F*)h1_Mpi0p_pVH_sig[iPol][iTBin]->Clone();
-                    }
-                    else {
-                        h2_Mpi0Eta_VanHove_sum[iTBin]->Add(h2_Mpi0Eta_VanHove_sig[iPol][iTBin]);
-                        h2_VanHove_XY_sum[iTBin]->Add(h2_VanHove_XY_sig[iPol][iTBin]);
-                        h1_Mpi0p_sum[iTBin]->Add(h1_Mpi0p_sig[iPol][iTBin]);
-                        h1_Mpi0p_pVH_sum[iTBin]->Add(h1_Mpi0p_pVH_sig[iPol][iTBin]);
-                    }
-                }
+                // if (isPlotVanHopeAngle) {
+                //     h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Add(h2_Mpi0Eta_VanHove_bkg[iPol][iTBin]);
+                //     h2_VanHove_XY_sig[iPol][iTBin]->Add(h2_VanHove_XY_bkg[iPol][iTBin]);
+                //     gSystem->cd(fitResultDir[iTBin]);
+                //     // h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Draw("COLZ");
+                //     // c1->SaveAs(Form("plot_Mpi0Eta_VanHove_sig_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
+                //     // h2_VanHove_XY_sig[iPol][iTBin]->Draw("COLZ");
+                //     // c1->SaveAs(Form("plot_VanHove_XY_sig_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
+                //     if (!iPol) {
+                //         h2_Mpi0Eta_VanHove_sum[iTBin] = (TH2F*)h2_Mpi0Eta_VanHove_sig[iPol][iTBin]->Clone();
+                //         h2_VanHove_XY_sum[iTBin] = (TH2F*)h2_VanHove_XY_sig[iPol][iTBin]->Clone();
+                //         h1_Mpi0p_sum[iTBin] = (TH1F*)h1_Mpi0p_sig[iPol][iTBin]->Clone();
+                //         h1_Mpi0p_pVH_sum[iTBin] = (TH1F*)h1_Mpi0p_pVH_sig[iPol][iTBin]->Clone();
+                //     }
+                //     else {
+                //         h2_Mpi0Eta_VanHove_sum[iTBin]->Add(h2_Mpi0Eta_VanHove_sig[iPol][iTBin]);
+                //         h2_VanHove_XY_sum[iTBin]->Add(h2_VanHove_XY_sig[iPol][iTBin]);
+                //         h1_Mpi0p_sum[iTBin]->Add(h1_Mpi0p_sig[iPol][iTBin]);
+                //         h1_Mpi0p_pVH_sum[iTBin]->Add(h1_Mpi0p_pVH_sig[iPol][iTBin]);
+                //     }
+                // }
 
-                if (isPlotMPi0Eta) {
-                    h1_Mpi0eta_sig[iPol][iTBin]->Add(h1_Mpi0eta_bkg[iPol][iTBin]);
-                    gSystem->cd(fitResultDir[iTBin]);
+                // if (isPlotMPi0Eta) {
+                //     h1_Mpi0eta_sig[iPol][iTBin]->Add(h1_Mpi0eta_bkg[iPol][iTBin]);
+                //     gSystem->cd(fitResultDir[iTBin]);
 
-                    if (!iPol) h1_Mpi0eta_sum[iTBin] = (TH1F*)h1_Mpi0eta_sig[iPol][iTBin]->Clone();
-                    else h1_Mpi0eta_sum[iTBin]->Add(h1_Mpi0eta_sig[iPol][iTBin]);
-                }
+                //     if (!iPol) h1_Mpi0eta_sum[iTBin] = (TH1F*)h1_Mpi0eta_sig[iPol][iTBin]->Clone();
+                //     else h1_Mpi0eta_sum[iTBin]->Add(h1_Mpi0eta_sig[iPol][iTBin]);
+                // }
 
                 TTree *tFlatTreeRecon = (TTree*)fFlatTreeRecon[iPol][iTBin]->Get("kin");
                 AssignSelectedBranches(tFlatTreeRecon, branchFlatTree, branchVar);
@@ -492,17 +521,64 @@ void drawHist(){
                 // h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin]->Draw("COLZ");
                 // c_test->SaveAs(Form("plot_Mpi0Eta_cosThetaGJ_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
 
+                Hist1DManager *h1ManagerRecon = new Hist1DManager();
+                
+                h1ManagerRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]);
+                h1ManagerRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]);
+                h1ManagerRecon->FillFromTree(tFlatTreeRecon);
+                h1ManagerMpieta->Add(h1ManagerRecon->GetHist(0),h1ManagerRecon->GetBrVar(0),h1ManagerRecon->GetNBinsX(0),h1ManagerRecon->GetXMin(0),h1ManagerRecon->GetXMax(0));
+                h1ManagerCosThetaGJ->Add(h1ManagerRecon->GetHist(1),h1ManagerRecon->GetBrVar(1),h1ManagerRecon->GetNBinsX(1),h1ManagerRecon->GetXMin(1),h1ManagerRecon->GetXMax(1));
+                // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
+                // h1ManagerRecon->Print(1,Form("HistManagerPlot_cosThetaGJ_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
+                delete h1ManagerRecon;
+
                 Hist2DManager *h2ManagerRecon = new Hist2DManager();
                 h2ManagerRecon->Add(Mpi0eta,cosTheta_eta_gj,"M_{#eta#pi^{0}} (GeV)","cos(#theta_{GJ})",50,1.04,1.72,50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]);
                 h2ManagerRecon->FillFromTree(tFlatTreeRecon);
                 h2ManagerMpi0etaPol->Add(h2ManagerRecon->GetHist(0),h2ManagerRecon->GetBrVarX(0),h2ManagerRecon->GetBrVarY(0),h2ManagerRecon->GetNBinsX(0),h2ManagerRecon->GetXMin(0),h2ManagerRecon->GetXMax(0),h2ManagerRecon->GetNBinsY(0),h2ManagerRecon->GetYMin(0),h2ManagerRecon->GetYMax(0));
                 delete h2ManagerRecon;
                 // h2ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_cosThetaGJ_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"COLZ",1600,1200);
-                // delete h2ManagerRecon;
+            
+                TTree *tFlatTreeReconPhase1 = (TTree*)fFlatTreeReconPhase1[iPol][iTBin]->Get("kin");
+                AssignSelectedBranches(tFlatTreeReconPhase1, branchFlatTree, branchVar);
+
+                Hist1DManager *h1ManagerReconPhase1 = new Hist1DManager();
+                h1ManagerReconPhase1->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_Phase1");
+                h1ManagerReconPhase1->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Phase1");
+                h1ManagerReconPhase1->FillFromTree(tFlatTreeReconPhase1);
+                h1ManagerMpietaPhase1->Add(h1ManagerReconPhase1->GetHist(0),h1ManagerReconPhase1->GetBrVar(0),h1ManagerReconPhase1->GetNBinsX(0),h1ManagerReconPhase1->GetXMin(0),h1ManagerReconPhase1->GetXMax(0));
+                h1ManagerCosThetaGJPhase1->Add(h1ManagerReconPhase1->GetHist(1),h1ManagerReconPhase1->GetBrVar(1),h1ManagerReconPhase1->GetNBinsX(1),h1ManagerReconPhase1->GetXMin(1),h1ManagerReconPhase1->GetXMax(1));
+                delete h1ManagerReconPhase1;
+            
             }
 
-            cout << "h2ManagerMpi0etaPol->GetSize() = " << h2ManagerMpi0etaPol->GetSize() << endl;
-            h2ManagerMpi0etaPol->PrintHistSum(Form("HistManagerPlot_Mpi0Eta_cosThetaGJ_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()),"COLZ",1600,1600);
+            // cout << "h2ManagerMpi0etaPol->GetSize() = " << h2ManagerMpi0etaPol->GetSize() << endl;
+            // h1ManagerMpieta->PrintHistSum(Form("HistManagerPlot_Mpi0Eta_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()),"P",1600,1600);
+            // h1ManagerCosThetaGJ->PrintHistSum(Form("HistManagerPlot_cosThetaGJ_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()),"P",1600,1600);
+            // h2ManagerMpi0etaPol->PrintHistSum(Form("HistManagerPlot_Mpi0Eta_cosThetaGJ_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()),"COLZ",1600,1600);
+            
+            c_test->cd();
+            TLegend *leg = new TLegend(0.7,0.8,0.8,0.9);
+            TH1F *h1_Mpi0eta_Recon_sum = (TH1F*)h1ManagerMpieta->GetHistSum();
+            TH1F *h1_Mpi0eta_Recon_sum_Phase1 = (TH1F*)h1ManagerMpietaPhase1->GetHistSum();
+            h1_Mpi0eta_Recon_sum_Phase1->Draw("P");
+            h1_Mpi0eta_Recon_sum->SetLineColor(kRed);
+            h1_Mpi0eta_Recon_sum->Draw("PSAME");
+            leg->AddEntry(h1_Mpi0eta_Recon_sum,"2019-11","pl");
+            leg->AddEntry(h1_Mpi0eta_Recon_sum_Phase1,"GlueX-I","pl");
+            leg->Draw();
+            c_test->SaveAs(Form("plot_Mpi0Eta_wPhase1_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()));
+
+            TH1F *h1_cosThetaGJ_Recon_sum = (TH1F*)h1ManagerCosThetaGJ->GetHistSum();
+            TH1F *h1_cosThetaGJ_Recon_sum_Phase1 = (TH1F*)h1ManagerCosThetaGJPhase1->GetHistSum();
+            h1_cosThetaGJ_Recon_sum_Phase1->Draw("P");
+            h1_cosThetaGJ_Recon_sum->SetLineColor(kRed);
+            h1_cosThetaGJ_Recon_sum->Draw("PSAME");
+            leg->Clear();
+            leg->AddEntry(h1_cosThetaGJ_Recon_sum,"2019-11","pl");
+            leg->AddEntry(h1_cosThetaGJ_Recon_sum_Phase1,"GlueX-I","pl");
+            leg->Draw();
+            c_test->SaveAs(Form("plot_cosThetaGJ_wPhase1_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()));
 
             TLatex *tbinLatex = new TLatex();
             tbinLatex->SetTextSize(0.04);
@@ -751,15 +827,15 @@ void gluex_style() {
 	// gluex_style->SetCanvasDefH(600);
 
 	// let's change the default margins
-	gluex_style->SetPadBottomMargin(0.2);
-	gluex_style->SetPadLeftMargin(0.2);
-	gluex_style->SetPadTopMargin(0.0);
-	gluex_style->SetPadRightMargin(0.0);
+	gluex_style->SetPadBottomMargin(0.1);
+	gluex_style->SetPadLeftMargin(0.15);
+	gluex_style->SetPadTopMargin(0.05);
+	gluex_style->SetPadRightMargin(0.1);
 
 	// axis labels and settings
     gluex_style->SetStripDecimals(0);
- 	gluex_style->SetLabelSize(0.045,"xyz"); // size of axis value font
- 	gluex_style->SetTitleSize(0.06,"xyz"); // size of axis title font
+ 	gluex_style->SetLabelSize(0.03,"xyz"); // size of axis value font
+ 	gluex_style->SetTitleSize(0.04,"xyz"); // size of axis title font
  	gluex_style->SetTitleFont(42,"xyz"); // font option
  	gluex_style->SetLabelFont(42,"xyz"); 
  	gluex_style->SetTitleOffset(1.5,"y"); 
