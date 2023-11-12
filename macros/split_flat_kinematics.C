@@ -15,30 +15,36 @@ void split_flat_kinematics(){
     //         USED FOR AMPLITUDE FITS WITH POLARIZATION
     // ********************************************
 
-    bool sumRuns=true;
+    bool sumRuns=false;
     bool forceSplitting=true; // Should we run the splitting again? Or should we just sum runs if sumRuns=true
-    bool remergePols=true; // should we remerge polarizations after splitting? 
+    bool remergePols=false; // should we remerge polarizations after splitting? 
     
-    //string otag="_selectGenTandM";
-    //string itag="_nominal";
-    string otag="_kmatrix";
-    string itag="";
+    string otag="_Phase1";
+    string itag="_nominal_wPhotonSyst";
 
-    string folder="phase1_selected_v4/";
-    bool ignorePolarization=true; // Kmatrix stuff has only one polarization, so ignore. No polarization in Flat MC so ignore also
-    vector<string> runs={"2018_8"};//,"2018_1","2018_8"};
+    string ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
+    string ofolder="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/";
+    vector<string> runs={"2017_1","2018_1","2018_8"};
+
+    // string otag="_test1";
+    // string itag="";
+
+    // string folder="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/";
+    bool ignorePolarization=false; // Kmatrix stuff has only one polarization, so ignore. No polarization in Flat MC so ignore also
+    // vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
     vector<string> files;
     for (auto run: runs){
-        //files.push_back("D"+run+"_selected"+itag+"_data_flat.root");
-        //files.push_back("D"+run+"_selected"+itag+"_bkgnd_flat.root");
-        //files.push_back("D"+run+"_selected"+itag+"_acc_flat.root");
-        //files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
-        //files.push_back("F"+run+"_gen_data_flat.root");
+        // files.push_back("D"+run+"_selected"+itag+"_data_flat.root");
+        // files.push_back("D"+run+"_selected"+itag+"_bkgnd_flat.root");
+        files.push_back("D"+run+"_selected"+itag+"_acc_flat.root");
+        // files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
+        // files.push_back("F"+run+"_gen_data_flat.root");
         
         //files.push_back("K"+run+"_selected"+itag+"_data_flat.root");
         //files.push_back("K"+run+"_selected"+itag+"_bkgnd_flat.root");
-        files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
-        files.push_back("F"+run+"_gen_data_flat.root");
+        // files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
+        // files.push_back("F"+run+"_selected"+itag+"_MC_acc_flat.root");
+        // files.push_back("F"+run+"_gen_data_flat.root");
     }
 
     // ********************************************
@@ -46,18 +52,23 @@ void split_flat_kinematics(){
     // ********************************************
     int nFileTypes=((int)files.size())/((int)runs.size());
 
-    map<int,int> pols={{0,0}};//,{45,1},{90,2},{135,3},{-1,4}};
-    vector<string> polstrings={"000"};//,"045","090","135","AMO"};
+    map<int,int> pols={{0,0},{45,1},{90,2},{135,3},{-1,4}};//,{45,1},{90,2},{135,3},{-1,4}};
+    vector<string> polstrings={"000","045","090","135","AMO"};//,"045","090","135","AMO"};
 
-    map<string,int> ts={{"010020",0},{"0200325",1},{"0325050",2},{"050075",3},{"075100",4}}; // t
-    vector<float> mint={0.1,0.2,0.325,0.5,0.75};
-    vector<float> maxt={0.2,0.325,0.5,0.75,1.0};
+    map<string,int> ts={{"010020",0},{"0200325",1},{"0325050",2},{"050075",3},{"075100",4}}; // t 
+    vector<float> mint={0.1,0.2,0.325,0.5,0.75}; // 
+    vector<float> maxt={0.2,0.325,0.5,0.75,1.0}; //
+    // map<string,int> ts={{"010020",0},{"020030",1},{"030040",2},{"040050",3},{"050060",4}}; // t 
+    // vector<float> mint={0.1,0.2,0.3,0.4,0.5}; // 
+    // vector<float> maxt={0.2,0.3,0.4,0.5,0.6}; // 
     map<string,int> mpi0etas={{"104172",0}}; // m 
     vector<float> minmpi0eta={1.04};
     vector<float> maxmpi0eta={1.72};
+    // vector<float> minmpi0eta={0.0};
+    // vector<float> maxmpi0eta={1.0};
     //map<string,int> ts={{"010100",1.0}}; // t
-    //vector<float> mint={0};
-    //vector<float> maxt={1.0};
+    // vector<float> mint={0};
+    // vector<float> maxt={1.0};
     //map<string,int> mpi0etas={{"104156",0},{"104160",1},{"104164",2},{"104168",3},{"104172",4},{"104176",5},{"104180",6}}; // m 
     //vector<float> minmpi0eta={1.04,1.04,1.04,1.04,1.04,1.04,1.04};
     //vector<float> maxmpi0eta={1.56,1.60,1.64,1.68,1.72,1.76,1.80};
@@ -72,7 +83,7 @@ void split_flat_kinematics(){
     if (forceSplitting){
         for (auto const& t: ts){
             for (auto const& m: mpi0etas){
-                string floc=folder+"t"+t.first+"_m"+m.first+otag+itag+"/";
+                string floc=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/";
                 gSystem->Exec(("mkdir -p "+floc).c_str()); } }
 
         for (auto file: files){
@@ -80,7 +91,7 @@ void split_flat_kinematics(){
             cout << "FILE: " << file << endl;
             cout << "================================================" << endl;
 
-            TFile *oldfile = new TFile((folder+file).c_str());
+            TFile *oldfile = new TFile((ifolder+file).c_str());
             TTree *oldtree = (TTree*)oldfile->Get("kin");
             Long64_t nentries = oldtree->GetEntries();
 
@@ -95,7 +106,7 @@ void split_flat_kinematics(){
             for (auto const& pol: pols){ it=0;
                 for (auto const& t: ts){ im=0;
                     for (auto const& m: mpi0etas){
-                        string floc=folder+"t"+t.first+"_m"+m.first+otag+itag+"/";
+                        string floc=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/";
                         newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+file).c_str(),"recreate");
                         newtree[ip][it][im] = oldtree->CloneTree(0);
                         ++im;
@@ -119,12 +130,14 @@ void split_flat_kinematics(){
             float VH;
             bool pVH;
             float pVH2;
+            float weight;
             // Check to see if we have the right branches for the different data,bkgnd,acc,gen trees
             //    Small caveat - thrown branches ALWAYS exist even for data,bkgnd trees but the branch will only contain 0s
             bool has_recon_branches = (bool)oldtree->GetListOfBranches()->FindObject("Ebeam"); // returned object decays to a boolean
             cout << "has proper recon branches: " << has_recon_branches << endl;
             
             oldtree->SetBranchAddress("BeamAngle",&BeamAngle);
+            oldtree->SetBranchAddress("Weight",&weight);
             if (has_recon_branches){
                 oldtree->SetBranchAddress("mandelstam_t",&mandelstam_t);
                 oldtree->SetBranchAddress("Ebeam",&Ebeam);
@@ -133,9 +146,9 @@ void split_flat_kinematics(){
                 oldtree->SetBranchAddress("pVH",&VH);
                 oldtree->SetBranchAddress("vanHove_omega",&vanHove_omega);
             }
+            oldtree->SetBranchAddress("Mpi0eta_thrown",&mpi0eta_thrown);
             oldtree->SetBranchAddress("mandelstam_t_thrown",&mandelstam_t_thrown);
             oldtree->SetBranchAddress("Ebeam_thrown",&Ebeam_thrown);
-            oldtree->SetBranchAddress("Mpi0eta_thrown",&mpi0eta_thrown);
             oldtree->GetEntry(0);
             bool has_thrown_branches = (Ebeam_thrown!=0);
             cout << "has proper thrown branches: " << has_thrown_branches << endl;
@@ -162,10 +175,20 @@ void split_flat_kinematics(){
                          //if (has_recon_branches*!(mpi0p>2.0)) continue;
                          if (has_recon_branches*!((mandelstam_t>mint[it])*(mandelstam_t<maxt[it]))) continue;
                          if (has_recon_branches*!((mpi0eta>minmpi0eta[im])*(mpi0eta<maxmpi0eta[im]))) continue;
+                        //  if (has_recon_branches*!((Ebeam>8.2)*(Ebeam<8.6))) continue;
+                        //  if (isAcc*!((Ebeam_thrown>8.2)*(Ebeam_thrown<8.6))) continue;
                          //if (has_thrown_branches*!((mandelstam_t_thrown>mint[it])*(mandelstam_t_thrown<maxt[it]))) continue;
                          //if (has_thrown_branches*!((mpi0eta_thrown>minmpi0eta[im])*(mpi0eta_thrown<maxmpi0eta[im]))) continue;
                          if (isGen*!((mandelstam_t_thrown>mint[it])*(mandelstam_t_thrown<maxt[it]))) continue;
+                        //  cout << Ebeam_thrown << " " << mandelstam_t_thrown << " " << mpi0eta_thrown << " " << minmpi0eta[im] << endl;
                          if (isGen*!((mpi0eta_thrown>minmpi0eta[im])*(mpi0eta_thrown<maxmpi0eta[im]))) continue;
+                        //  if (isGen*!((Ebeam_thrown>8.2)*(Ebeam_thrown<8.6))) continue;
+                        //  check if weight is nan
+                        if( weight != weight ) {
+                            cout << "there is a nan weight =" << weight << endl;
+                            weight = 0.0;
+                            continue;
+                        }
                          newtree[pols[beamAngle]][it][im]->Fill();
                      } ++it;
                  }
@@ -177,9 +200,11 @@ void split_flat_kinematics(){
             // ********************************************
             int post_nentries=0;
             int tmp_nentries;
+            cout << "pols size = " << pols.size() << endl;
             for (int ip=0; ip<(int)pols.size(); ++ip){
                 for (int it=0; it<(int)ts.size(); ++it){
                     for (int im=0; im<(int)mpi0etas.size(); ++im){
+                        cout << ip << endl;
                         newfile[ip][it][im]->cd();
                         newtree[ip][it][im]->Write();
                         tmp_nentries=newtree[ip][it][im]->GetEntries();
@@ -188,8 +213,9 @@ void split_flat_kinematics(){
                         newfile[ip][it][im]->Close();
             }}}
         } // close the forceSplitting condition
+        cout << "close the forceSplitting condition" << endl;
     } // closes files loop
-
+    cout << "closes files loop" << endl;
 
     // ********************************************
     /////// COMPLICATED FUNCTION TO HADD FILES FROM DIFFERENT RUNS
@@ -203,18 +229,18 @@ void split_flat_kinematics(){
             for (auto const& m: mpi0etas){ 
                 for (int j=0; j<nFileTypes; ++j){ ip=0;
                     string remergePolCmd="hadd -f ";
-                    remergePolCmd+=folder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"polALL_t"+t.first+"_m"+m.first+otag+"_";
+                    remergePolCmd+=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"polALL_t"+t.first+"_m"+m.first+otag+"_";
                     remergePolCmd+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                     for (auto const& pol: pols){
                         string cmd;
                         string target;
                         for (int i=0; (int)i<runs.size(); ++i){
                             if (i==0){
-                                target=folder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_";
+                                target=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_";
                                 target+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                                 cmd="hadd -f "+target;
                             }
-                            cmd+=" "+folder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+files[nFileTypes*i+j];
+                            cmd+=" "+ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+files[nFileTypes*i+j];
                         }
                         cout << endl << cmd << endl;
                         gSystem->Exec(cmd.c_str()); 
@@ -232,11 +258,3 @@ void split_flat_kinematics(){
         }
     }
 }
-
-
-
-
-
-
-
-

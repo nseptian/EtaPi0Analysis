@@ -2,7 +2,7 @@
 
 string topologyString="4#gammap[#pi^{0},#eta]";
 //string topologyString="5#gammap[2#pi^{0}]";
-float radToDeg=180/3.14159;
+Float_t radToDeg=180/3.14159;
 
 void DSelector_thrown::Init(TTree *locTree)
 {
@@ -35,7 +35,7 @@ void DSelector_thrown::Init(TTree *locTree)
 	dPreviousRunNumber = 0;
 
         if (dFlatTreeFileName!=""){
-            // Fundamental = char, int, float, double, etc.
+            // Fundamental = char, int, Float_t, double, etc.
 	    // AmpTools tree output - step 2
 	    // Creating new branches in the flat tree
  	    SetupAmpTools_FlatTree(); // sets most of the branches necesary for AmpTools PWA
@@ -98,7 +98,7 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
 	{
 		dIsPolarizedFlag = dAnalysisUtilities.Get_IsPolarizedBeam(locRunNumber, dIsPARAFlag);
 		dPreviousRunNumber = locRunNumber;
-	        hasPolarizationAngle = dAnalysisUtilities.Get_PolarizationAngle(locRunNumber, locPolarizationAngle);
+	    hasPolarizationAngle = dAnalysisUtilities.Get_PolarizationAngle(locRunNumber, locPolarizationAngle);
 	}
 
 	/********************************************* SETUP UNIQUENESS TRACKING ********************************************/
@@ -117,8 +117,10 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
         TLorentzVector locBeamP4=dThrownBeam->Get_P4();
 
         TLorentzVector locProtonP4;
-        TLorentzVector locEtaP4;
-        TLorentzVector locPi0P4;
+		TLorentzVector locGamma1P4;
+		TLorentzVector locGamma2P4;
+		TLorentzVector locGamma3P4;
+		TLorentzVector locGamma4P4;
 
 	//Loop over throwns
 	for(UInt_t loc_i = 0; loc_i < Get_NumThrown(); ++loc_i)
@@ -130,15 +132,29 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
 		Particle_t locPID = dThrownWrapper->Get_PID();
 		TLorentzVector locThrownP4 = dThrownWrapper->Get_P4();
 
-                if (locPID==14)
-                    locProtonP4=locThrownP4;
-                else if (locPID==7)
-                    locPi0P4=locThrownP4;
-                else if (locPID==17)
-                    locEtaP4=locThrownP4;
-		//cout << "Thrown " << loc_i << ": " << locPID << ", " << locThrownP4.Px() << ", " << locThrownP4.Py() << ", " << locThrownP4.Pz() << ", " << locThrownP4.E() << endl;
+                // if (locPID==14)
+                //     locProtonP4=locThrownP4;
+				// if (locPID==1)
+
+                // else if (locPID==7)
+                //     locPi0P4=locThrownP4;
+                // else if (locPID==17)
+                //     locEtaP4=locThrownP4;
+		cout << "Thrown " << loc_i << ": " << locPID << ", " << locThrownP4.Px() << ", " << locThrownP4.Py() << ", " << locThrownP4.Pz() << ", " << locThrownP4.E() << endl;
+		if (loc_i==0)
+			locProtonP4=locThrownP4;
+		else if (loc_i==1)
+			locGamma1P4=locThrownP4;
+		else if (loc_i==2)
+			locGamma2P4=locThrownP4;
+		else if (loc_i==3)
+			locGamma3P4=locThrownP4;
+		else if (loc_i==4)
+			locGamma4P4=locThrownP4;
+		else
+			cout << "More than 5 particles in the final state" << endl;
 	}
-        //cout << locPi0P4.M() << ", " << locEtaP4.M() << ", " << locProtonP4.M() << endl;
+        // cout << locPi0P4.M() << ", " << locEtaP4.M() << ", " << locProtonP4.M() << endl;
 
 	//OR Manually:
 	//BEWARE: Do not expect the particles to be at the same array indices from one event to the next!!!!
@@ -155,18 +171,22 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
 	TLorentzVector locThrown2P4 = *((TLorentzVector*)(*locP4Array)->At(1));
 	cout << "Particle 2: " << locThrown2PID << ", " << locThrown2P4.Px() << ", " << locThrown2P4.Py() << ", " << locThrown2P4.Pz() << ", " << locThrown2P4.E() << endl;
 */
-
-	float Metapi0=(locPi0P4+locEtaP4).M();
-	float Metap=(locEtaP4+locProtonP4).M();
-	float Mpi0p=(locPi0P4+locProtonP4).M();
-	float mandelstam_t=-(dTargetP4-locProtonP4).M2();		
-        float beam_e=locBeamP4.E();
-	//bool bMetapi0 = (Metapi0>1.04)*(Metapi0<1.56);
+	
+    TLorentzVector locEtaP4 = locGamma1P4+locGamma2P4;
+    TLorentzVector locPi0P4 = locGamma3P4+locGamma4P4;
+	cout << "Eta " << locEtaP4.M() << ", Pi0 " << locPi0P4.M() << endl;
+	Float_t Metapi0=(locPi0P4+locEtaP4).M();
+	cout << "Metapi0 " << Metapi0 << endl;
+	Float_t Metap=(locEtaP4+locProtonP4).M();
+	Float_t Mpi0p=(locPi0P4+locProtonP4).M();
+	Float_t mandelstam_t=-(dTargetP4-locProtonP4).M2();		
+    Float_t beam_e=locBeamP4.E();
+	bool bMetapi0 = (Metapi0>1.04)*(Metapi0<1.56);
 	bool bmandelstamt=(mandelstam_t<1.0)*(mandelstam_t>0.1); 
-        bool bMpi0eta = (Metapi0<1.80)*(Metapi0>0.8);
-        bool bBeamE = (beam_e<8.8)*(beam_e>8.2);
-        bool bTopology = locThrownTopology==topologyString; 
-        bool selection=bTopology*bBeamE;//*bmandelstamt*bMpi0eta;
+    // bool bMpi0eta = (Metapi0<1.80)*(Metapi0>0.8);
+    bool bBeamE = (beam_e<8.6)*(beam_e>8.0);
+    bool bTopology = locThrownTopology==topologyString; 
+    bool selection=bBeamE;//bTopology*bmandelstamt*bMpi0eta;
 
 	TLorentzRotation cmRestBoost( -(locBeamP4+dTargetP4).BoostVector() );
 	TLorentzVector pi0_cm = cmRestBoost * locPi0P4; 
@@ -186,50 +206,50 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
    	TVector3 angles( (eta_res.Vect()).Dot(x),
    	      (eta_res.Vect()).Dot(y),
    	      (eta_res.Vect()).Dot(z) );
-   	float cosTheta_hel = angles.CosTheta();
-   	float phi_hel = angles.Phi();
+   	Float_t cosTheta_hel = angles.CosTheta();
+   	Float_t phi_hel = angles.Phi();
    	z = beam_res.Vect().Unit(); // CALCULATING FOR Gottfried-Jackson frame
    	x = y.Cross(z);
    	angles.SetXYZ( (eta_res.Vect()).Dot(x),
    	      (eta_res.Vect()).Dot(y),
    	      (eta_res.Vect()).Dot(z) );
-   	float cosTheta_gj = angles.CosTheta();
-   	float phi_gj = angles.Phi();
-        TVector3 eps(TMath::Cos(locPolarizationAngle*TMath::DegToRad()), TMath::Sin(locPolarizationAngle*TMath::DegToRad()), 0.0); // beam polarization vector
-        float Phi = TMath::ATan2(y.Dot(eps), beam_cm.Vect().Unit().Dot(eps.Cross(y)))*radToDeg;
-        std::tuple<double, double> vh = dAnalysisUtilities.Calc_vanHoveCoord(recoil_cm,pi0_cm,eta_cm);
-        float q = get<0>(vh);
-        float omega = get<1>(vh);
-        float vanHove_x=q*cos(omega);
-        float vanHove_y=q*sin(omega);
-        float pVH=(float)filterOmega(omega*radToDeg,(locPi0P4+locEtaP4).M());
+   	Float_t cosTheta_gj = angles.CosTheta();
+   	Float_t phi_gj = angles.Phi();
+    TVector3 eps(TMath::Cos(locPolarizationAngle*TMath::DegToRad()), TMath::Sin(locPolarizationAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+    Float_t Phi = TMath::ATan2(y.Dot(eps), beam_cm.Vect().Unit().Dot(eps.Cross(y)))*radToDeg;
+    std::tuple<double, double> vh = dAnalysisUtilities.Calc_vanHoveCoord(recoil_cm,pi0_cm,eta_cm);
+    Float_t q = get<0>(vh);
+    Float_t omega = get<1>(vh);
+    Float_t vanHove_x=q*cos(omega);
+    Float_t vanHove_y=q*sin(omega);
+    Float_t pVH=(Float_t)filterOmega(omega*radToDeg,(locPi0P4+locEtaP4).M());
 
         if ((dFlatTreeFileName!="")*(selection)){
-	    vector<TLorentzVector> locFinalStateP4; // should be in the same order as PID_FinalState
-	    locFinalStateP4.push_back(locProtonP4); 
-	    locFinalStateP4.push_back(locPi0P4);
-	    locFinalStateP4.push_back(locEtaP4);
-	    dFlatTreeInterface->Fill_Fundamental<Float_t>("Weight", 1);
-	    dFlatTreeInterface->Fill_Fundamental<Int_t>("BeamAngle", locPolarizationAngle); // include so we can split on this branch later
-	    dFlatTreeInterface->Fill_Fundamental<Float_t>("Target_Mass", 0.9382720); // Necesary for divideData.pl not for AmpTools itself (I think)
-	    dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 2212, 0); // proton
-	    dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 111, 1);  // Pi0
-	    dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 221, 2);  // Eta
- 	    dFlatTreeInterface->Fill_Fundamental<Float_t>("mandelstam_t_thrown",mandelstam_t); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("Mpi0eta_thrown",Metapi0); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("Metap_thrown",Metap); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("Mpi0p_thrown",Mpi0p); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_hel_thrown",cosTheta_hel); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_gj_thrown",cosTheta_gj); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_hel_thrown",phi_hel); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_gj_thrown",phi_gj); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("Ebeam_thrown",beam_e); 
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_omega_thrown",omega*radToDeg);
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_x_thrown",vanHove_x);
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_y_thrown",vanHove_y);
-            dFlatTreeInterface->Fill_Fundamental<Float_t>("pVH_thrown",pVH);
-	    FillAmpTools_FlatTree(locBeamP4, locFinalStateP4);
-	    Fill_FlatTree(); //for the active combo
+			vector<TLorentzVector> locFinalStateP4; // should be in the same order as PID_FinalState
+			locFinalStateP4.push_back(locProtonP4); 
+			locFinalStateP4.push_back(locPi0P4);
+			locFinalStateP4.push_back(locEtaP4);
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Weight", 1.0);
+			dFlatTreeInterface->Fill_Fundamental<Int_t>("BeamAngle", locPolarizationAngle); // include so we can split on this branch later
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Target_Mass", 0.9382720); // Necesary for divideData.pl not for AmpTools itself (I think)
+			dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 2212, 0); // proton
+			dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 111, 1);  // Pi0
+			dFlatTreeInterface->Fill_Fundamental<Int_t>("PID_FinalState", 221, 2);  // Eta
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("mandelstam_t_thrown",mandelstam_t); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Mpi0eta_thrown",Metapi0); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Metap_thrown",Metap); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Mpi0p_thrown",Mpi0p); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_hel_thrown",cosTheta_hel); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_gj_thrown",cosTheta_gj); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_hel_thrown",phi_hel); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_gj_thrown",phi_gj); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Ebeam_thrown",beam_e); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_omega_thrown",omega*radToDeg);
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_x_thrown",vanHove_x);
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_y_thrown",vanHove_y);
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("pVH_thrown",pVH);
+			FillAmpTools_FlatTree(locBeamP4, locFinalStateP4);
+			Fill_FlatTree(); //for the active combo
         }
 
 	/******************************************* BIN THROWN DATA INTO SEPARATE TREES FOR AMPTOOLS ***************************************/

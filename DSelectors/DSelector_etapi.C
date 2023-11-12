@@ -158,7 +158,7 @@ void DSelector_etapi::Init(TTree *locTree)
 //
 //	//BEAM ENERGY
 //	dAnalysisActions.push_back(new DHistogramAction_BeamEnergy(dComboWrapper, false));
-//	//dAnalysisActions.push_back(new DCutAction_BeamEnergy(dComboWrapper, false, 8.2, 8.8));  // Coherent peak for runs in the range 30000-59999
+//	//dAnalysisActions.push_back(new DCutAction_BeamEnergy(dComboWrapper, false, 8.0, 8.6));  // Coherent peak for runs in the range 30000-59999
 //
 //	//KINEMATICS
 //	dAnalysisActions.push_back(new DHistogramAction_ParticleComboKinematics(dComboWrapper, false));
@@ -320,8 +320,10 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
         float locMetapi0_thrown=0;
         float locT_thrown=0; 
         TLorentzVector locProtonP4_thrown;
-        TLorentzVector locEtaP4_thrown;
-        TLorentzVector locPi0P4_thrown;
+		TLorentzVector locGamma1P4_thrown;
+		TLorentzVector locGamma2P4_thrown;
+		TLorentzVector locGamma3P4_thrown;
+		TLorentzVector locGamma4P4_thrown;
 
 	if(dThrownBeam != NULL)
 		locBeamE_thrown = dThrownBeam->Get_P4().E();
@@ -333,19 +335,30 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		dThrownWrapper->Set_ArrayIndex(loc_i);
 		Particle_t locPID = dThrownWrapper->Get_PID();
 		TLorentzVector locThrownP4_thrown = dThrownWrapper->Get_P4();
-                if (locPID==14)
-                    locProtonP4_thrown=locThrownP4_thrown;
-                else if (locPID==7)
-                    locPi0P4_thrown=locThrownP4_thrown;
-                else if (locPID==17)
-                    locEtaP4_thrown=locThrownP4_thrown;
+
+		cout << "Thrown " << loc_i << ": " << locPID << ", " << locThrownP4_thrown.Px() << ", " << locThrownP4_thrown.Py() << ", " << locThrownP4_thrown.Pz() << ", " << locThrownP4_thrown.E() << endl;
+		if (loc_i==0) locProtonP4_thrown=locThrownP4_thrown;
+		else if (loc_i==1) locGamma1P4_thrown=locThrownP4_thrown;
+		else if (loc_i==2) locGamma2P4_thrown=locThrownP4_thrown;
+		else if (loc_i==3) locGamma3P4_thrown=locThrownP4_thrown;
+		else if (loc_i==4) locGamma4P4_thrown=locThrownP4_thrown;
+                // if (locPID==14)
+                //     locProtonP4_thrown=locThrownP4_thrown;
+                // else if (locPID==7)
+                //     locPi0P4_thrown=locThrownP4_thrown;
+                // else if (locPID==17)
+                //     locEtaP4_thrown=locThrownP4_thrown;
 	}
+
+    TLorentzVector locEtaP4_thrown=locGamma1P4_thrown+locGamma2P4_thrown;
+    TLorentzVector locPi0P4_thrown=locGamma3P4_thrown+locGamma4P4_thrown;
+	cout << "Eta " << locEtaP4_thrown.M() << ", Pi0 " << locPi0P4_thrown.M() << endl;
 
 	locMetapi0_thrown=(locPi0P4_thrown+locEtaP4_thrown).M();
 	locT_thrown=-(dTargetP4-locProtonP4_thrown).M2();		
 	//bool bMetapi0_thrown = (locMetapi0_thrown>1.04)*(locMetapi0_thrown<1.56);
 	bool bmandelstamt_thrown=(locT_thrown<1.0)*(locT_thrown>0.1); 
-        bool bBeamE_thrown = (locBeamE_thrown<8.8)*(locBeamE_thrown>8.2);
+        bool bBeamE_thrown = (locBeamE_thrown<8.6)*(locBeamE_thrown>8.0);
         bool bMpi0eta_thrown = (locMetapi0_thrown<1.80)*(locMetapi0_thrown>0.8);
         bool bTopology = locThrownTopology==topologyString; 
         bool selection_thrown=bTopology;//*bBeamE_thrown;//*bmandelstamt_thrown*bMpi0eta_thrown;
@@ -401,7 +414,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 	            for(UInt_t loc_i = 0; loc_i < Get_NumThrown(); ++loc_i)
 	            {	
 	                dThrownWrapper->Set_ArrayIndex( loc_i );
-	                //cout << "thrown PID: " << dThrownWrapper->Get_PID() << " with parent thrown index: " <<  dThrownWrapper->Get_ParentIndex() << endl;
+	                cout << "thrown PID: " << dThrownWrapper->Get_PID() << " with parent thrown index: " <<  dThrownWrapper->Get_ParentIndex() << endl;
 	                thrownPIDs.push_back(dThrownWrapper->Get_PID());
 	                parentIDs.push_back(dThrownWrapper->Get_ParentIndex());
 	            }
@@ -425,12 +438,12 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
                             matchedParentPIDs.push_back(-1);
                         }
                     }
-                    // photons 1,2 should pair to a pi0 (Geant PID=7) and photons 3,4 should pair to an eta (17)
+                    // photons 1,2 should pair to a eta (Geant PID=17) and photons 3,4 should pair to an pi0 (7)
                     //    proton should have a proton PID=14
-                    if ((matchedParentPIDs[0]==7)*
-                        (matchedParentPIDs[1]==7)*
-                        (matchedParentPIDs[2]==17)*
-                        (matchedParentPIDs[3]==17)*
+                    if ((matchedParentPIDs[0]==17)*
+                        (matchedParentPIDs[1]==17)*
+                        (matchedParentPIDs[2]==7)*
+                        (matchedParentPIDs[3]==7)*
                         (thrownPIDs[dProtonWrapper->Get_ThrownIndex()]==14)){
                         isCorrectSpect=true;}
                     else{
@@ -491,11 +504,12 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		Bool_t locSkipNearestOutOfTimeBunch = true; // True: skip events from nearest out-of-time bunch on either side (recommended).
 		Int_t locNumOutOfTimeBunchesToUse = locSkipNearestOutOfTimeBunch ? locNumOutOfTimeBunchesInTree-1:locNumOutOfTimeBunchesInTree; 
 		// Ideal value would be 1, but deviations require added factor, which is different for data and MC.
-		// float locAccidentalScalingFactor = (float)(dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC)); 
+		float locAccidentalScalingFactor = (float)(dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC)); 
+		// float locAccidentalScalingFactor = 1;
 		// float locAccidentalScalingFactorError = (float)(dAnalysisUtilities.Get_AccidentalScalingFactorError(Get_RunNumber(), locBeamP4.E())); 
 		// Weight by 1 for in-time events, ScalingFactor*(1/NBunches) for out-of-time
-		float locHistAccidWeightFactor = 1;
-		// (float)(locRelBeamBucket==0 ? 1 : -locAccidentalScalingFactor/(2*locNumOutOfTimeBunchesToUse)) ; 
+		// float locHistAccidWeightFactor = 1;
+		float locHistAccidWeightFactor = (float)(locRelBeamBucket==0 ? 1 : -locAccidentalScalingFactor/(2*locNumOutOfTimeBunchesToUse)) ; 
 		if((locSkipNearestOutOfTimeBunch && abs(locRelBeamBucket)==1) || abs(locDeltaT_RF)>4*(locNumOutOfTimeBunchesInTree+1)) { 
                     // Skip nearest out-of-time bunch: tails of in-time distribution also leak in
                     // Sometimes we get RF times that are very large, like O(10^5). Lets just keep times within an extra bunch 
@@ -655,8 +669,8 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
                 float mandelstam_tpi0 = -(locBeamP4-locPi0P4).M2();
 		// Select on coherent peak for region of high polarization. The AMPTOOLS fit using Zlm amplitudes will use the polarization
 		// 	for extra separation power (will tell us something about the production mechanism)
-		bool bBeamEnergy=(locBeamP4.E()>8.2)*(locBeamP4.E()<8.8); 
-		bool bMetapi0 = (Metapi0>1.04)*(Metapi0<1.80); // Select the a2(1320) mass region
+		bool bBeamEnergy=(locBeamP4.E()>8.2)*(locBeamP4.E()<8.6); 
+		bool bMetapi0 = (Metapi0>1.04)*(Metapi0<1.72); // Select the a2(1320) mass region
 		// Meson production occurs with small-t whereas baryon production occurs with large-t. This analysis cares about mesons
 		bool bmandelstamt=(mandelstam_t<1.0)*(mandelstam_t>0.1); 
 		// There are a few baryon resonances, the Delta+(1232) being the largest. We can reject it 
@@ -742,17 +756,17 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		//bool selection=bPhotonE*bPhotonTheta*bProtonMomentum*bProton_dEdx*bProtonZ*(dComboWrapper->Get_ChiSq_KinFit("")<100)*bUnusedEnergy*bMMsq*bBeamEnergy*
 		//		bmandelstamt*bMpi0p*bMetapi0*bSignalRegion;
                 // Choice 3: Nominal selection for a2 pwa
-		//bool selection=bBeamEnergy*bChiSq*bUnusedEnergy*bPhotonTheta*bProtonZ*bPhotonE*bProton_dEdx*bProtonMomentum*bMMsq*
-		//		bmandelstamt*bMpi0p*bLowMassAltCombo*bMetapi0*bSignalRegion;
+		bool selection=bBeamEnergy*bChiSq*bUnusedEnergy*bPhotonTheta*bProtonZ*bPhotonE*bProton_dEdx*bProtonMomentum*bMMsq*
+				bmandelstamt*bMpi0p*bLowMassAltCombo*bMetapi0*bSignalRegion;
                 // Choice 3.1: Loose selections for a2 pwa for systematic variations
-                bool selection=bBeamEnergy*(dComboWrapper->Get_ChiSq_KinFit("")<25)*(dComboWrapper->Get_Energy_UnusedShowers()<0.5)*
-                            ((locPhoton1P4.Theta()*radToDeg>=1.5 && locPhoton1P4.Theta()*radToDeg<=11) || locPhoton1P4.Theta()*radToDeg>=11.4)*
-                            ((locPhoton2P4.Theta()*radToDeg>=1.5 && locPhoton2P4.Theta()*radToDeg<=11) || locPhoton2P4.Theta()*radToDeg>=11.4)*
-                            ((locPhoton3P4.Theta()*radToDeg>=1.5 && locPhoton3P4.Theta()*radToDeg<=11) || locPhoton3P4.Theta()*radToDeg>=11.4)*
-                            ((locPhoton4P4.Theta()*radToDeg>=1.5 && locPhoton4P4.Theta()*radToDeg<=11) || locPhoton4P4.Theta()*radToDeg>=11.4)*
-                            (locProtonX4.Z()>50)*(locProtonX4.Z()<80)*  
-                            bPhotonE*bProton_dEdx*bProtonMomentum*bMMsq* // These selections remain unchanged (systematic only going tighter) - MMSq selection removed
-                            bSignalRegion;
+                // bool selection=bBeamEnergy*(dComboWrapper->Get_ChiSq_KinFit("")<25)*(dComboWrapper->Get_Energy_UnusedShowers()<0.5)*
+                //             ((locPhoton1P4.Theta()*radToDeg>=1.5 && locPhoton1P4.Theta()*radToDeg<=11) || locPhoton1P4.Theta()*radToDeg>=11.4)*
+                //             ((locPhoton2P4.Theta()*radToDeg>=1.5 && locPhoton2P4.Theta()*radToDeg<=11) || locPhoton2P4.Theta()*radToDeg>=11.4)*
+                //             ((locPhoton3P4.Theta()*radToDeg>=1.5 && locPhoton3P4.Theta()*radToDeg<=11) || locPhoton3P4.Theta()*radToDeg>=11.4)*
+                //             ((locPhoton4P4.Theta()*radToDeg>=1.5 && locPhoton4P4.Theta()*radToDeg<=11) || locPhoton4P4.Theta()*radToDeg>=11.4)*
+                //             (locProtonX4.Z()>50)*(locProtonX4.Z()<80)*  
+                //             bPhotonE*bProton_dEdx*bProtonMomentum*bMMsq* // These selections remain unchanged (systematic only going tighter) - MMSq selection removed
+                //             bSignalRegion;
                 // Choice 4: Nominal selections for double Regge beam asymmetry systematic studies. Loosen most cuts. 
                 //           MANUALLY COMMENT OUT bWeight FILTERING LINE BELOW
                 //bool selection=(Metapi0>1.6)*(Metapi0<3.0)*bBeamEnergy*(dComboWrapper->Get_ChiSq_KinFit("")<50)*(dComboWrapper->Get_Energy_UnusedShowers()<10)*
@@ -774,12 +788,12 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 			dHist_Mpi0->Fill((locPhoton1P4+locPhoton2P4).M(),locHistAccidWeightFactor);
 			dHist_Meta->Fill((locPhoton3P4+locPhoton4P4).M(),locHistAccidWeightFactor);
 		}
-//		if (!bWeight){ 
-//                        // Turn ON for a2 study: We do not want to keep any combos with weight 0. Not just a waste of space, can cause problems during fitting
-//                        // Turn OFF for double regge study since we do sideband subtraction separately there 
-//			dComboWrapper->Set_IsComboCut(true);
-//			continue;
-//		}
+		if (!bWeight){ 
+                       // Turn ON for a2 study: We do not want to keep any combos with weight 0. Not just a waste of space, can cause problems during fitting
+                       // Turn OFF for double regge study since we do sideband subtraction separately there 
+			dComboWrapper->Set_IsComboCut(true);
+			continue;
+		}
 		if(bPhotonE*bPhotonTheta*bProtonMomentum*bProton_dEdx*bProtonZ*bChiSq*bUnusedEnergy*bBeamEnergy*bmandelstamt*bMpi0p*bLowMassAltCombo*bMetapi0*bSignalRegion){
 			dHist_mmsq->Fill(locMissingMassSquared,weight);}
 		if(bPhotonE*bProtonMomentum*bProton_dEdx*bProtonZ*bChiSq*bUnusedEnergy*bMMsq*bBeamEnergy*bmandelstamt*bMpi0p*bLowMassAltCombo*bMetapi0*bSignalRegion){

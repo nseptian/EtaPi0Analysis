@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/d/home/septian/anaconda3/bin/python
 
 import subprocess
 import os
@@ -28,9 +28,9 @@ tmax=args.tmax
 if seed!=-1:
     random.seed(seed)
 
-#baseDir="/d/grid17/ln16/dselector_v3/phase1_selected/"
+# baseDir="/d/grid17/ln16/dselector_v3/phase1_selected/"
 #baseDir="/scratch-fits/"
-baseDir="rootFiles/"
+baseDir="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/"
 
 
 def replaceStr(search,replace,fileName):
@@ -47,32 +47,36 @@ os.system("cp "+fileName+" "+newFileName)
 
 
 t="010020"
-m="104180" 
-extraTag="_selectGenTandM" 
+m="104172"
+# t="0"
+# m="0" 
+extraTag="_test1" 
 for pol in ["000","045","090","135"]:
     baseLoc=baseDir+"t"+t+"_m"+m+extraTag+"/"
+    print("checking for "+baseLoc)
+    
     if not os.path.exists(baseLoc):
         raise ValueError("YOU ARE REQUESTING FOR A FOLDER THAT DOES NOT EXIST! FIX IN SETUP FIT SCRIPT")
 
     search="DATAFILE_"+pol
-    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_DTOT_selected_data_flat.root"
+    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_D2019_11_selected_data_flat.root"
     replace=baseLoc+fileLoc
     replaceStr(search,replace,newFileName)
 
     search="BKGNDFILE_"+pol
-    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_DTOT_selected_bkgnd_flat.root"
+    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_D2019_11_selected_bkgnd_flat.root"
     replace=baseLoc+fileLoc
     replaceStr(search,replace,newFileName)
 
     search="ACCMCFILE_"+pol
-    fileLoc="polALL_t"+t+"_m"+m+extraTag+"_FTOT_selected_acc_flat.root"
-    #fileLoc="pol"+pol+"_t"+t+"_m"+m+"_FTOT_selected_acc_flat.root"
+    # fileLoc="polALL_t"+t+"_m"+m+extraTag+"_F2019_11_selected_acc_flat.root"
+    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_F2019_11_selected_acc_flat.root"
     replace=baseLoc+fileLoc
     replaceStr(search,replace,newFileName)
 
     search="GENMCFILE_"+pol
-    fileLoc="polALL_t"+t+"_m"+m+extraTag+"_FTOT_gen_data_flat.root"
-    #fileLoc="pol"+pol+"_t"+t+"_m"+m+"_FTOT_gen_data_flat.root"
+    # fileLoc="polALL_t"+t+"_m"+m+extraTag+"_F2019_11_gen_data_flat.root"
+    fileLoc="pol"+pol+"_t"+t+"_m"+m+extraTag+"_F2019_11_gen_data_flat.root"
     replace=baseLoc+fileLoc
     replaceStr(search,replace,newFileName)
     
@@ -87,7 +91,7 @@ refs=["Negative","Positive"]
 parts=["Re","Im"]
 
 reaction="LOOPREAC"
-#reaction="EtaPi0_000"
+# reaction="EtaPi0_000"
 
 def reinitWave(wave,anchor):
     for j,ref in enumerate(refs): 
@@ -116,12 +120,18 @@ print("\n------------------------------------------------\n")
 print("intializing piecewise production parameters")
 print("------------------------------------------------\n")
 condition=' pVH 0.5 999 unusedEnergy -999 0.01 chiSq -999 13.277 !photonTheta1 -999 2.5 !photonTheta1 10.3 11.9 !photonTheta2 -999 2.5 !photonTheta2 10.3 11.9 !photonTheta3 -999 2.5 !photonTheta3 10.3 11.9 !photonTheta4 -999 2.5 !photonTheta4 10.3 11.9 photonE1 0.1 999 photonE2 0.1 999 photonE3 0.1 999 photonE4 0.1 999 proton_momentum 0.3 999 proton_z 52 78 mmsq -0.05 0.05'
+# condition = ''
 with open(newFileName) as cfg:
     lines=[line.rstrip() for line in cfg.readlines() if "ROOTDataReaderFilter" in line]
     for line in lines:
         accReplace=f" Mpi0eta {pcwsMassMin} {pcwsMassMax}"+condition 
+        # accReplace=f""        
         genReplace=f" Mpi0eta_thrown {pcwsMassMin} {pcwsMassMax}"
-        replace=line+accReplace if any([line.startswith(ftype) for ftype in ["accmc","data","bkgnd"]]) else line+genReplace
+        # genReplace=f" Mpi0eta_thrown 0.0 1.0"
+        # genReplace=f""
+
+        replace=line+accReplace if any([line.startswith(ftype) for ftype in ["data","bkgnd"]]) else line+genReplace #try without accmc
+        # replace=line+accReplace if any([line.startswith(ftype) for ftype in ["accmc","data","bkgnd"]]) else line+genReplace
         #replace=line+accReplace if any([ftype in line for ftype in ["accmc","data","bkgnd"]]) else line+genReplace
         replaceStr(line,replace,newFileName)
 
@@ -129,7 +139,7 @@ with open(newFileName) as cfg:
 print("\n------------------------------------------------\n")
 print("intializing piecewise production parameters")
 print("------------------------------------------------\n")
-realBin=4
+realBin=5
 pcwsMin=-200
 pcwsMax=200
 searchStrs=['PIECEWISE PARAMETER DEFINITIONS', 'PIECEWISE PARSCAN DEFINITIONS', 'PIECEWISE AMPLITUDE DEFINITIONS']
@@ -198,13 +208,3 @@ with open(newFileName) as newFile:
         if any(exclude in line for exclude in excludeList):
             excludeLines.append(linenum)
             os.system("sed -i '"+str(linenum+1)+"s/^/#/' "+newFileName) 
-
-
-
-
-
-
-
-
-
-            
