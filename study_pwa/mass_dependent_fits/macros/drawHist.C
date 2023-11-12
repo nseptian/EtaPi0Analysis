@@ -24,14 +24,14 @@ const TString extraTag = "test1";
 const TString dataTag = "2019_11";
 
 // user config for plotting from flat trees
-const Int_t NBranchFlatTree = 7;
-const TString branchFlatTree[NBranchFlatTree] = {"Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","weightASBS"};
-enum brVar{Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,weightASBS};
+const Int_t NBranchFlatTree = 8;
+const TString branchFlatTree[NBranchFlatTree] = {"Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","cosTheta_eta_gj","weightASBS"};
+enum brVar{Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,cosTheta_eta_gj,weightASBS};
 Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0};
 
 const Bool_t isOpenFlatTrees = kTRUE;
-const Bool_t isPlotVanHopeAngle = kTRUE;
-const Bool_t isPlotMPi0Eta = kTRUE;
+const Bool_t isPlotVanHopeAngle = kFALSE;
+const Bool_t isPlotMPi0Eta = kFALSE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
@@ -61,13 +61,243 @@ void gluex_style();
 void AssignSelectedBranches(TTree *tTree,const TString branchName[],Float_t branchVar[]);
 void etaPiPlotter(TString dirFit, TString fitName, TString outName, TString ampString, Bool_t isAccCorr, TString ampFitFracString, Bool_t isPlotAllVar, Bool_t isPlotGenHist);
 Double_t GetAccCorrYield(TString fileName);
+void FillHistogram2D(TTree *tTree, vector<TH2F*> vh2, vector<brVar> brVarX, vector<brVar> brVarY);
+
+// hist1DManager class for 1D histograms
+class Hist1DManager {
+    public:
+        Hist1DManager();
+        ~Hist1DManager();
+        void Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName="");
+        void Add(TH1F* h1, brVar brVar, Int_t nBinsX, Float_t xMin, Float_t xMax);
+        TH1F* GetHist(Int_t idxHist) {return vh1[idxHist];}
+        void FillFromTree(TTree *tTree);
+        void Print(Int_t idxHist, TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight);
+        TH1F* GetHistSum();
+        void PrintHistSum(TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight);
+        Int_t GetSize() {return NHist;}
+        brVar GetBrVar(Int_t idxHist) {return vBrVar[idxHist];}
+        Int_t GetNBinsX(Int_t idxHist) {return vNBinsX[idxHist];}
+        Float_t GetXMin(Int_t idxHist) {return vXMin[idxHist];}
+        Float_t GetXMax(Int_t idxHist) {return vXMax[idxHist];}
+
+    private:
+        Int_t NHist;
+        vector<TH1F*> vh1;
+        vector<brVar> vBrVar;
+        vector<TString> vBrName;
+        vector<Int_t> vNBinsX;
+        vector<Float_t> vXMin;
+        vector<Float_t> vXMax;
+};
+
+Hist1DManager::Hist1DManager() {
+    NHist = 0;
+}
+
+Hist1DManager::~Hist1DManager() {
+    for (Int_t iHist=0;iHist<NHist;iHist++) delete vh1[iHist];
+}
+
+void Hist1DManager::Add(brVar brVar, TString XTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, TString extraName="") {
+    vh1.push_back(new TH1F(Form("h1_%s_%s",branchFlatTree[brVar].Data(),extraName.Data()),Form("%s",XTitle.Data()),nBinsX,xMin,xMax));
+    vh1[NHist]->GetXaxis()->SetTitle(XTitle);
+    vBrVar.push_back(brVar);
+    vBrName.push_back(branchFlatTree[brVar]);
+    vNBinsX.push_back(nBinsX);
+    vXMin.push_back(xMin);
+    vXMax.push_back(xMax);
+    NHist++;
+}
+
+void Hist1DManager::Add(TH1F* h1, brVar brVar, Int_t nBinsX, Float_t xMin, Float_t xMax) {
+    vh1.push_back(static_cast<TH1F*>(h1->Clone()));
+    vBrVar.push_back(brVar);
+    vBrName.push_back(branchFlatTree[brVar]);
+    vNBinsX.push_back(nBinsX);
+    vXMin.push_back(xMin);
+    vXMax.push_back(xMax);
+    NHist++;
+}
+
+void Hist1DManager::FillFromTree(TTree *tTree) {
+    for (Int_t iHist=0;iHist<NHist;iHist++) {
+        for (Int_t iEvent=0;iEvent<tTree->GetEntries();iEvent++) {
+            tTree->GetEntry(iEvent);
+            vh1[iHist]->Fill(branchVar[vBrVar[iHist]],branchVar[weightASBS]);
+        }
+    }
+}
+
+void Hist1DManager::Print(Int_t idxHist, TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight) {
+    TCanvas *c = new TCanvas("c", "c",canvasWidth,canvasHeight);
+    vh1[idxHist]->Draw(drawOption);
+    c->SaveAs(fileName);
+    delete c;
+}
+
+TH1F* Hist1DManager::GetHistSum() {
+    TH1F *h1Sum = (TH1F*)vh1[0]->Clone();
+    // check if all histograms have the same properties
+    for (Int_t iHist=1;iHist<NHist;iHist++) {
+        if (vBrVar[iHist]!=vBrVar[0]) {
+            cout << "ERROR: Histograms have different branches!" << endl;
+            return NULL;
+        }
+        if (vNBinsX[iHist]!=vNBinsX[0]) {
+            cout << "ERROR: Histograms have different number of bins!" << endl;
+            return NULL;
+        }
+        if (vXMin[iHist]!=vXMin[0]) {
+            cout << "ERROR: Histograms have different minimum values!" << endl;
+            return NULL;
+        }
+        if (vXMax[iHist]!=vXMax[0]) {
+            cout << "ERROR: Histograms have different maximum values!" << endl;
+            return NULL;
+        }
+    }
+    for (Int_t iHist=1;iHist<NHist;iHist++) h1Sum->Add(vh1[iHist]);
+    return h1Sum;
+}
+
+void Hist1DManager::PrintHistSum(TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight) {
+    TCanvas *c = new TCanvas("c", "c",canvasWidth,canvasHeight);
+    GetHistSum()->Draw(drawOption);
+    c->SaveAs(fileName);
+    delete c;
+}
+
+// hist2DManager class for 2D histograms
+class Hist2DManager {
+    public:
+        Hist2DManager();
+        ~Hist2DManager();
+        void Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName="");
+        void Add(TH2F* h2, brVar brVarX, brVar brVarY, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax);
+        TH2F* GetHist(Int_t idxHist) {return vh2[idxHist];}
+        void FillFromTree(TTree *tTree);
+        void Print(Int_t idxHist, TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight);
+        Int_t GetSize() {return NHist;}
+        TH2F* GetHistSum();
+        void PrintHistSum(TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight);
+        brVar GetBrVarX(Int_t idxHist) {return vBrVarX[idxHist];}
+        brVar GetBrVarY(Int_t idxHist) {return vBrVarY[idxHist];}
+        Int_t GetNBinsX(Int_t idxHist) {return vNBinsX[idxHist];}
+        Int_t GetNBinsY(Int_t idxHist) {return vNBinsY[idxHist];}
+        Float_t GetXMin(Int_t idxHist) {return vXMin[idxHist];}
+        Float_t GetYMin(Int_t idxHist) {return vYMin[idxHist];}
+        Float_t GetXMax(Int_t idxHist) {return vXMax[idxHist];}
+        Float_t GetYMax(Int_t idxHist) {return vYMax[idxHist];}
+
+    private:
+        Int_t NHist;
+        vector<TH2F*> vh2;
+        vector<brVar> vBrVarX;
+        vector<brVar> vBrVarY;
+        vector<TString> vBrNameX;
+        vector<TString> vBrNameY;
+        vector<Int_t> vNBinsX;
+        vector<Int_t> vNBinsY;
+        vector<Float_t> vXMin;
+        vector<Float_t> vYMin;
+        vector<Float_t> vXMax;
+        vector<Float_t> vYMax;
+        TH2F *h2Sum;
+};
+
+Hist2DManager::Hist2DManager() {
+    NHist = 0;
+}
+
+Hist2DManager::~Hist2DManager() {
+    for (Int_t iHist=0;iHist<NHist;iHist++) delete vh2[iHist];
+}
+
+void Hist2DManager::Add(brVar brVarX, brVar brVarY, TString XTitle, TString YTitle, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax, TString extraName="") {
+    vh2.push_back(new TH2F(Form("h2_%s_%s_%s",branchFlatTree[brVarX].Data(),branchFlatTree[brVarY].Data(),extraName.Data()),Form("%s vs %s",XTitle.Data(),YTitle.Data()),nBinsX,xMin,xMax,nBinsY,yMin,yMax));
+    vh2[NHist]->GetXaxis()->SetTitle(XTitle);
+    vh2[NHist]->GetYaxis()->SetTitle(YTitle);
+    vBrVarX.push_back(brVarX);
+    vBrVarY.push_back(brVarY);
+    vBrNameX.push_back(branchFlatTree[brVarX]);
+    vBrNameY.push_back(branchFlatTree[brVarY]);
+    vNBinsX.push_back(nBinsX);
+    vNBinsY.push_back(nBinsY);
+    vXMin.push_back(xMin);
+    vYMin.push_back(yMin);
+    vXMax.push_back(xMax);
+    vYMax.push_back(yMax);
+    NHist++;
+}
+
+void Hist2DManager::Add(TH2F* h2, brVar brVarX, brVar brVarY, Int_t nBinsX, Float_t xMin, Float_t xMax, Int_t nBinsY, Float_t yMin, Float_t yMax) {
+    vh2.push_back(static_cast<TH2F*>(h2->Clone()));
+    vBrVarX.push_back(brVarX);
+    vBrVarY.push_back(brVarY);
+    vBrNameX.push_back(branchFlatTree[brVarX]);
+    vBrNameY.push_back(branchFlatTree[brVarY]);
+    vNBinsX.push_back(nBinsX);
+    vNBinsY.push_back(nBinsY);
+    vXMin.push_back(xMin);
+    vYMin.push_back(yMin);
+    vXMax.push_back(xMax);
+    vYMax.push_back(yMax);
+    NHist++;
+}
+
+void Hist2DManager::FillFromTree(TTree *tTree) {
+    for (Int_t iHist=0;iHist<NHist;iHist++) {
+        for (Int_t iEvent=0;iEvent<tTree->GetEntries();iEvent++) {
+            tTree->GetEntry(iEvent);
+            vh2[iHist]->Fill(branchVar[vBrVarX[iHist]],branchVar[vBrVarY[iHist]],branchVar[weightASBS]);
+        }
+    }
+}
+
+void Hist2DManager::Print(Int_t idxHist, TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight) {
+    TCanvas *c = new TCanvas("c", "c",canvasWidth,canvasHeight);
+    vh2[idxHist]->Draw(drawOption);
+    c->SaveAs(fileName);
+    delete c;
+}
+
+TH2F* Hist2DManager::GetHistSum() {
+    h2Sum = (TH2F*)vh2[0]->Clone();
+    // check if all histograms have the same properties
+    for (Int_t iHist=1;iHist<NHist;iHist++) {
+        if (vBrVarX[iHist]!=vBrVarX[0] || vBrVarY[iHist]!=vBrVarY[0]) {
+            cout << "ERROR: Histograms have different branches!" << endl;
+            return NULL;
+        }
+        if (vNBinsX[iHist]!=vNBinsX[0] || vNBinsY[iHist]!=vNBinsY[0]) {
+            cout << "ERROR: Histograms have different number of bins!" << endl;
+            return NULL;
+        }
+        if (vXMin[iHist]!=vXMin[0] || vYMin[iHist]!=vYMin[0]) {
+            cout << "ERROR: Histograms have different minimum values!" << endl;
+            return NULL;
+        }
+        if (vXMax[iHist]!=vXMax[0] || vYMax[iHist]!=vYMax[0]) {
+            cout << "ERROR: Histograms have different maximum values!" << endl;
+            return NULL;
+        }
+    }
+    for (Int_t iHist=1;iHist<NHist;iHist++) h2Sum->Add(vh2[iHist]);
+    return h2Sum;
+}
+
+void Hist2DManager::PrintHistSum(TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight) {
+    TCanvas *c = new TCanvas("c", "c",canvasWidth,canvasHeight);
+    GetHistSum()->Draw(drawOption);
+    c->SaveAs(fileName);
+    delete c;
+}
 
 void drawHist(){
-    gluex_style();
-    gROOT->ForceStyle();
-
-    gluex_style();
-    gROOT->ForceStyle();
+    // gluex_style();
+    // gROOT->ForceStyle();
+    gStyle->SetOptStat(0);
 
     vector<vector<TString>> rootFlatTreeSignal;
     vector<vector<TString>> rootFlatTreeBkgnd;
@@ -85,7 +315,8 @@ void drawHist(){
     TCanvas *c1 = new TCanvas("c1", "c1",1200,1200);
     TCanvas *c2 = new TCanvas("c2", "c2",1600,800);
     TCanvas *c_Mpi0Eta = new TCanvas("c_Mpi0Eta", "c_Mpi0Eta",1600,1200);
-    
+    TCanvas *c_test = new TCanvas("c_test", "c_test",1600,1200);
+
     if (isOpenFlatTrees){
         for (auto polstrs: polString) {
             vector<TString> rootFlatTreeSignalTemp;
@@ -111,6 +342,7 @@ void drawHist(){
         // open flat trees
         TFile *fFlatTreeSignal[NPol][NTBin];
         TFile *fFlatTreeBkgnd[NPol][NTBin];
+        TFile *fFlatTreeRecon[NPol][NTBin];
         TFile *fFlatTreeMCRecon[NPol][NTBin];
         TFile *fFlatTreeMCThrown[NPol][NTBin];
 
@@ -122,26 +354,10 @@ void drawHist(){
                 fFlatTreeSignal[iPol][iTBin] = TFile::Open(rootFlatTreeSignal[iPol][iTBin], "READ");
                 cout << rootFlatTreeBkgnd[iPol][iTBin] << endl;
                 fFlatTreeBkgnd[iPol][iTBin] = TFile::Open(rootFlatTreeBkgnd[iPol][iTBin], "READ");
-                cout << rootFlatTreeMCRecon[iPol][iTBin] << endl;
-                cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
-            }
-        }
-        // open flat trees
-        TFile *fFlatTreeSignal[NPol][NTBin];
-        TFile *fFlatTreeBkgnd[NPol][NTBin];
-        TFile *fFlatTreeMCRecon[NPol][NTBin];
-        TFile *fFlatTreeMCThrown[NPol][NTBin];
-
-        cout << endl << endl << "Opening flat trees:" << endl;
-        for (Int_t iPol=0;iPol<NPol;iPol++){
-            cout << endl << "=============================" << polString[iPol] << "=============================" << endl;
-            for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
-                cout << rootFlatTreeSignal[iPol][iTBin] << endl;
-                fFlatTreeSignal[iPol][iTBin] = TFile::Open(rootFlatTreeSignal[iPol][iTBin], "READ");
-                cout << rootFlatTreeBkgnd[iPol][iTBin] << endl;
-                fFlatTreeBkgnd[iPol][iTBin] = TFile::Open(rootFlatTreeBkgnd[iPol][iTBin], "READ");
-                cout << rootFlatTreeMCRecon[iPol][iTBin] << endl;
-                cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
+                cout << rootFlatTreeRecon[iPol][iTBin] << endl;
+                fFlatTreeRecon[iPol][iTBin] = TFile::Open(rootFlatTreeRecon[iPol][iTBin], "READ");
+                // cout << rootFlatTreeMCRecon[iPol][iTBin] << endl;
+                // cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
             }
         }
 
@@ -163,6 +379,9 @@ void drawHist(){
         TH1F *h1_Mpi0p_pVH_sum[NTBin];
         TH1F *h1_Mpi0eta_sum[NTBin];
 
+        TH2F *h2_Mpi0Eta_cosThetaGJ_Recon[NPol][NTBin];
+        TH2F *h2_Mpi0Eta_cosThetaGJ_Recon_sum[NTBin];
+
         // Loop over signal flat tree
         cout << endl << endl << "Looping over signal tree:" << endl;
         c1->Clear();
@@ -171,6 +390,7 @@ void drawHist(){
         c_Mpi0Eta->Divide(3,2);
         for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
             cout << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
+            Hist2DManager *h2ManagerMpi0etaPol = new Hist2DManager();
             for (Int_t iPol=0;iPol<NPol;iPol++){
                 cout << endl << "=============================" << polString[iPol] << "=============================" << endl;
                 cout << rootFlatTreeSignal[iPol][iTBin] << endl;
@@ -250,11 +470,39 @@ void drawHist(){
                     else h1_Mpi0eta_sum[iTBin]->Add(h1_Mpi0eta_sig[iPol][iTBin]);
                 }
 
-                // if (isStudyGenMC) {
-                    
-                // }
+                TTree *tFlatTreeRecon = (TTree*)fFlatTreeRecon[iPol][iTBin]->Get("kin");
+                AssignSelectedBranches(tFlatTreeRecon, branchFlatTree, branchVar);
+                // h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin] = new TH2F(Form("h2_Mpi0Eta_cosThetaGJ_Recon_%s_%s",polString[iPol].Data(),tBinString[iTBin].Data()),Form("M_{#eta#pi^{0}} vs cos(#theta_{#eta#gamma_{J}}) (%s, %s)",polString[iPol].Data(),tBinString[iTBin].Data()),100,1.04,1.72,100,-1.0,1.0);
+                
+                // vector<TH2F*> vh2Recon;
+                // vector<brVar> vBrXRecon;
+                // vector<brVar> vBrYRecon;
 
+                // vh2Recon.push_back(h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin]);
+                // vBrXRecon.push_back(Mpi0eta);
+                // vBrYRecon.push_back(cosTheta_eta_gj);
+                // DefineHistogram2D(vh2Recon,vBrXRecon,vBrYRecon);
+                // FillHistogram2D(tFlatTreeRecon,vh2Recon,vBrXRecon,vBrYRecon);
+
+
+
+                // if (!iPol) h2_Mpi0Eta_cosThetaGJ_Recon_sum[iTBin] = (TH2F*)h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin]->Clone();
+                // else h2_Mpi0Eta_cosThetaGJ_Recon_sum[iTBin]->Add(h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin]);
+                // c_test->cd();
+                // h2_Mpi0Eta_cosThetaGJ_Recon[iPol][iTBin]->Draw("COLZ");
+                // c_test->SaveAs(Form("plot_Mpi0Eta_cosThetaGJ_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
+
+                Hist2DManager *h2ManagerRecon = new Hist2DManager();
+                h2ManagerRecon->Add(Mpi0eta,cosTheta_eta_gj,"M_{#eta#pi^{0}} (GeV)","cos(#theta_{GJ})",50,1.04,1.72,50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]);
+                h2ManagerRecon->FillFromTree(tFlatTreeRecon);
+                h2ManagerMpi0etaPol->Add(h2ManagerRecon->GetHist(0),h2ManagerRecon->GetBrVarX(0),h2ManagerRecon->GetBrVarY(0),h2ManagerRecon->GetNBinsX(0),h2ManagerRecon->GetXMin(0),h2ManagerRecon->GetXMax(0),h2ManagerRecon->GetNBinsY(0),h2ManagerRecon->GetYMin(0),h2ManagerRecon->GetYMax(0));
+                delete h2ManagerRecon;
+                // h2ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_cosThetaGJ_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"COLZ",1600,1200);
+                // delete h2ManagerRecon;
             }
+
+            cout << "h2ManagerMpi0etaPol->GetSize() = " << h2ManagerMpi0etaPol->GetSize() << endl;
+            h2ManagerMpi0etaPol->PrintHistSum(Form("HistManagerPlot_Mpi0Eta_cosThetaGJ_Recon_sum_%s_%s_%s_%s.pdf",tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data(),dataTag.Data()),"COLZ",1600,1600);
 
             TLatex *tbinLatex = new TLatex();
             tbinLatex->SetTextSize(0.04);
@@ -315,35 +563,6 @@ void drawHist(){
     // TFile *fFlatTreeMCRecon[NPol];
     // TFile *fFlatTreeMCThrown[NPol];
 
-    if (isPlotWaves) {
-        // open root files from etapi_plotter
-        TFile *fHistFitResult[NTBin];
-        cout << endl << endl << "Opening root files from etapi_plotter:" << endl;
-        for (Int_t iTBin=0;iTBin<NTBin;iTBin++) {
-            cout << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
-            TString rootFileName = fitResultDir[iTBin] + etaPiPlotterOutName + "_" + strWave + ".root";
-            cout << "File: " << rootFileName <<  endl;
-            fHistFitResult[iTBin] = TFile::Open(rootFileName, "READ");
-        }
-        c1->Clear();
-        c1->Divide(3,2);
-        c1->SetCanvasSize(1600,1200);
-        for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
-            c1->cd(iTBin+1);
-            TH1F *h1MEtaPiAcc[NPol];
-            TH1F *h1MEtaPiAccSum;
-            TH1F *h1MEtaPiSig[NPol];
-            TH1F *h1MEtaPiSigSum;
-            TH1F *h1MEtaPiBkg[NPol];
-            TH1F *h1MEtaPiBkgSum;
-            for (Int_t iPol=0;iPol<NPol;iPol++){
-                // fFlatTreeSignal[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeSignal[iPol], "READ");
-                // fFlatTreeBkgnd[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeBkgnd[iPol], "READ");
-                // fFlatTreeMCRecon[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeMCRecon[iPol], "READ");
-                // fFlatTreeMCThrown[iPol] = TFile::Open(dirRootFlatTree+rootFlatTreeMCThrown[iPol], "READ");
-                h1MEtaPiAcc[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMEtaPiAccName);
-                h1MEtaPiSig[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMEtaPiSigName);
-                h1MEtaPiBkg[iPol] = (TH1F*)fHistFitResult[iTBin]->Get(histBaseName[iPol]+histMetaPiBkgName);
     if (isPlotWaves) {
         // open root files from etapi_plotter
         TFile *fHistFitResult[NTBin];
@@ -502,6 +721,15 @@ Double_t GetAccCorrYield(TString fileName){
     accCorrYield = totalEvents*fitFrac;
     
     return accCorrYield;
+}
+
+void FillHistogram2D(TTree* tTree, vector<TH2F*> vh2, vector<brVar> vbVarX, vector<brVar> vbVarY){
+    for (Int_t iEvent=0;iEvent<tTree->GetEntries();iEvent++){
+        tTree->GetEntry(iEvent);
+        for (Int_t iH2=0;iH2<vh2.size();iH2++) {
+            vh2[iH2]->Fill(branchVar[vbVarX[iH2]],branchVar[vbVarY[iH2]],branchVar[weightASBS]);
+        }
+    }
 }
 
 void gluex_style() {
