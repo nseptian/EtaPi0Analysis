@@ -37,12 +37,12 @@ void DSelector_etapi::Init(TTree *locTree)
 
         if (dFlatTreeFileName!=""){
             // Fundamental = char, int, float, double, etc.
-	    // AmpTools tree output - step 2
-	    // Creating new branches in the flat tree
- 	    SetupAmpTools_FlatTree(); // sets most of the branches necesary for AmpTools PWA
- 	    dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("Target_Mass"); 
- 	    dFlatTreeInterface->Create_Branch_FundamentalArray<Int_t>("PID_FinalState","NumFinalState");
- 	    dFlatTreeInterface->Create_Branch_Fundamental<Int_t>("BeamAngle");
+	    	// AmpTools tree output - step 2
+	    	// Creating new branches in the flat tree
+ 	    	SetupAmpTools_FlatTree(); // sets most of the branches necesary for AmpTools PWA
+ 	    	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("Target_Mass"); 
+ 	    	dFlatTreeInterface->Create_Branch_FundamentalArray<Int_t>("PID_FinalState","NumFinalState");
+ 	    	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>("BeamAngle");
             // Photon Related 
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("photonTheta1");	
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("photonTheta2");	
@@ -84,9 +84,9 @@ void DSelector_etapi::Init(TTree *locTree)
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("Mpi0eta"); 
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("Ebeam");
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_tp"); 
- 	    dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_t"); 
-	    dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_teta");	
-	    dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_tpi0");	
+ 	    	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_t"); 
+	    	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_teta");	
+	    	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("mandelstam_tpi0");	
             ////// Angles related
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("Phi"); 
             dFlatTreeInterface->Create_Branch_Fundamental<Float_t>("cosTheta_X_cm"); 
@@ -559,7 +559,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		else if (Meta > etaMean-nstd_eta[2]*etaStd && Meta < etaMean-nstd_eta[1]*etaStd){ eta_sbweight=weight_eta; }
 		else { eta_sbweight=0; }
 		float sbweight=pi0_sbweight*eta_sbweight;
-		float weight=sbweight*locHistAccidWeightFactor;
+		float weight=sbweight;//*locHistAccidWeightFactor
                 //weight=1;
 		// Reject combinations with zero weights. Zero weights take up space and do nothing. 
 		// 	Worse, it might cause the amptools unbinned likelihood fits to break
@@ -669,7 +669,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
                 float mandelstam_tpi0 = -(locBeamP4-locPi0P4).M2();
 		// Select on coherent peak for region of high polarization. The AMPTOOLS fit using Zlm amplitudes will use the polarization
 		// 	for extra separation power (will tell us something about the production mechanism)
-		bool bBeamEnergy=(locBeamP4.E()>8.2)*(locBeamP4.E()<8.6); 
+		bool bBeamEnergy=(locBeamP4.E()>8.0)*(locBeamP4.E()<8.6); 
 		bool bMetapi0 = (Metapi0>1.04)*(Metapi0<1.72); // Select the a2(1320) mass region
 		// Meson production occurs with small-t whereas baryon production occurs with large-t. This analysis cares about mesons
 		bool bmandelstamt=(mandelstam_t<1.0)*(mandelstam_t>0.1); 

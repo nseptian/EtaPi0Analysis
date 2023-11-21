@@ -19,24 +19,24 @@ void split_flat_kinematics(){
     bool forceSplitting=true; // Should we run the splitting again? Or should we just sum runs if sumRuns=true
     bool remergePols=false; // should we remerge polarizations after splitting? 
     
-    string otag="_Phase1";
-    string itag="_nominal_wPhotonSyst";
+    // string otag="_Phase1";
+    // string itag="_nominal_wPhotonSyst";
 
-    string ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
-    string ofolder="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/";
-    vector<string> runs={"2017_1","2018_1","2018_8"};
+    // string ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
+    string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+    // vector<string> runs={"2017_1","2018_1","2018_8"};
 
-    // string otag="_test1";
-    // string itag="";
+    string otag="_test1";
+    string itag="";
 
-    // string folder="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/";
+    string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
     bool ignorePolarization=false; // Kmatrix stuff has only one polarization, so ignore. No polarization in Flat MC so ignore also
-    // vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
+    vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
     vector<string> files;
     for (auto run: runs){
-        // files.push_back("D"+run+"_selected"+itag+"_data_flat.root");
-        // files.push_back("D"+run+"_selected"+itag+"_bkgnd_flat.root");
-        files.push_back("D"+run+"_selected"+itag+"_acc_flat.root");
+        files.push_back("D"+run+"_selected"+itag+"_data_flat.root");
+        files.push_back("D"+run+"_selected"+itag+"_bkgnd_flat.root");
+        // files.push_back("D"+run+"_selected"+itag+"_acc_flat.root");
         // files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
         // files.push_back("F"+run+"_gen_data_flat.root");
         

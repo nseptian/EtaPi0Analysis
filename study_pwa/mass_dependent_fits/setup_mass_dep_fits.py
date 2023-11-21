@@ -30,7 +30,7 @@ if seed!=-1:
 
 # baseDir="/d/grid17/ln16/dselector_v3/phase1_selected/"
 #baseDir="/scratch-fits/"
-baseDir="/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/"
+baseDir="/d/home/septian/EtaPi0Analysis/run/rootFiles/"
 
 
 def replaceStr(search,replace,fileName):
@@ -100,8 +100,10 @@ def reinitWave(wave,anchor):
             #scale=0 if wave[0]=="p" else 100 # start with null hypothesis where a2p does not exist
             scale=100
             if i==0:
-                rsample=random.uniform(-1*scale,scale)
-                isample=random.uniform(-1*scale,scale)
+                rsample=random.uniform(0,scale)
+                isample=random.uniform(0,scale)
+                # rsample=random.uniform(-1*scale,scale)
+                # isample=random.uniform(-1*scale,scale)
             search="initialize "+reaction+"::"+refpart+"::"+wave
             if anchor:
                 replace=search+f" cartesian {rsample:0.5f} 0 real"
@@ -115,10 +117,6 @@ print("------------------------------------------------\n")
 for wave in waves:
     reinitWave(wave,False)
 
-
-print("\n------------------------------------------------\n")
-print("intializing piecewise production parameters")
-print("------------------------------------------------\n")
 condition=' pVH 0.5 999 unusedEnergy -999 0.01 chiSq -999 13.277 !photonTheta1 -999 2.5 !photonTheta1 10.3 11.9 !photonTheta2 -999 2.5 !photonTheta2 10.3 11.9 !photonTheta3 -999 2.5 !photonTheta3 10.3 11.9 !photonTheta4 -999 2.5 !photonTheta4 10.3 11.9 photonE1 0.1 999 photonE2 0.1 999 photonE3 0.1 999 photonE4 0.1 999 proton_momentum 0.3 999 proton_z 52 78 mmsq -0.05 0.05'
 # condition = ''
 with open(newFileName) as cfg:
@@ -130,7 +128,8 @@ with open(newFileName) as cfg:
         # genReplace=f" Mpi0eta_thrown 0.0 1.0"
         # genReplace=f""
 
-        replace=line+accReplace if any([line.startswith(ftype) for ftype in ["data","bkgnd"]]) else line+genReplace #try without accmc
+        replace=line+accReplace if any([line.startswith(ftype) for ftype in ["accmc","data","bkgnd"]]) else line+genReplace #try without genmc
+        # replace=line+accReplace if any([line.startswith(ftype) for ftype in ["data","bkgnd"]]) else line+genReplace #try without accmc
         # replace=line+accReplace if any([line.startswith(ftype) for ftype in ["accmc","data","bkgnd"]]) else line+genReplace
         #replace=line+accReplace if any([ftype in line for ftype in ["accmc","data","bkgnd"]]) else line+genReplace
         replaceStr(line,replace,newFileName)
@@ -140,7 +139,7 @@ print("\n------------------------------------------------\n")
 print("intializing piecewise production parameters")
 print("------------------------------------------------\n")
 realBin=5
-pcwsMin=-200
+pcwsMin=0
 pcwsMax=200
 searchStrs=['PIECEWISE PARAMETER DEFINITIONS', 'PIECEWISE PARSCAN DEFINITIONS', 'PIECEWISE AMPLITUDE DEFINITIONS']
 with open(newFileName) as cfg:

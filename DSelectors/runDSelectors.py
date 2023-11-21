@@ -23,6 +23,7 @@ def runSelector(inFileLoc, treeName, outFileName, choice, proof_Nthreads, cfiles
     print("root -l -b -q '"+crun+"("+inFileLoc+","+'"'+treeName+'","'+outFileName+"_"+choiceToType[choice]+'",'+str(proof_Nthreads)+")'")
     os.system("root -l -b -q '"+crun+"("+inFileLoc+","+'"'+treeName+'","'+outFileName+"_"+choiceToType[choice]+'",'+str(proof_Nthreads)+")'")
     os.system("mv output_flat.root "+outFileName+"_"+choiceToType[choice]+"_flat.root")
+    os.system("mv *.root /d/grid17/septian/EtaPi0Analysis/run/rootFiles/")
 
 proof_Nthreads=36
 recon_cfiles=["DSelector_etapi.C", "runDSelector.C"]
@@ -33,7 +34,7 @@ reconTreeNameMC="pi0eta__B4_M17_M7_Tree"
 thrownTreeName="Thrown_Tree"
 
 #tag="_sbL_accN"
-tag="F2019_11"
+tag="2019_11_selected_woAccSub"
 
 # tag="F2019_11_gen_amp_072677"
 # tag="F2019_11_gen_amp"
@@ -41,12 +42,12 @@ tag="F2019_11"
 # PHASE 2 (2019)
 # runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4_M7_M17/merged/tree_pi0eta__B4_M7_M17*"',reconTreeNameData,tag,1,proof_Nthreads,recon_cfiles)
 # runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4_M7_M17/merged/tree_pi0eta__B4_M7_M17*"',reconTreeNameData,tag,2,proof_Nthreads,recon_cfiles)
-runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4_M7_M17/merged/tree_pi0eta__B4_M7_M17*"',reconTreeNameData,tag,3,proof_Nthreads,recon_cfiles)
+# runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4_M7_M17/merged/tree_pi0eta__B4_M7_M17*"',reconTreeNameData,tag,3,proof_Nthreads,recon_cfiles)
 
 # PHASE 2 MONTE CARLO
 # runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M/root/trees/tree_pi0eta__B4_M17_M7_gen_amp_071362_000_decay_evtgen.root"',reconTreeName,tag,1,proof_Nthreads,recon_cfiles)
-# runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/trees/tree_pi0eta__B4_M17_M7*"',reconTreeNameMC,tag,3,proof_Nthreads,recon_cfiles)
-# runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/thrown/tree_thrown_gen_amp*"',thrownTreeName,tag+"gen",1,proof_Nthreads,thrown_cfiles)
+runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/trees/tree_pi0eta__B4_M17_M7*"',reconTreeNameMC,tag,3,proof_Nthreads,recon_cfiles)
+# runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/thrown/tree_thrown_gen_amp*"',thrownTreeName,tag+"_gen",1,proof_Nthreads,thrown_cfiles)
 # runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M/root/thrown/tree_thrown_gen_amp_072677_000_decay_evtgen.root"',
 #        thrownTreeName,tag,1,proof_Nthreads,thrown_cfiles)
 

@@ -31,7 +31,7 @@ def main():
     ##########################################
     # Basic setup
     ##########################################
-    nprocesses=8
+    nprocesses=16
     fitFileName="etapi_result.fit"
     niters=[1,1] # [n,m] where n is #restarts and m is #iters per restart. In total we should have n*m iterations 
     workingDir=os.getcwd()
@@ -49,7 +49,7 @@ def main():
     ms=["104172"]
     mmins=[1.04]
     mmaxs=[1.72]
-    pcwsBins=[20]
+    pcwsBins=[17]
     #ms=["104156","104160","104164","104168","104172","104176","104180"]
     #mmins=[1.04,1.04,1.04,1.04,1.04,1.04,1.04]
     #mmaxs=[1.56,1.60,1.64,1.68,1.72,1.76,1.80]
@@ -83,7 +83,7 @@ def main():
                 #################################################################################
         
                 print("Starting fits")
-                cmd="mpirun -np "+str(nprocesses)+" fitMPI -c "+cfgFile+".cfg -r "+str(niters[1])+" -m 1000000 -t 1.0 -x 1 -f 0.15" 
+                cmd="mpirun -np "+str(nprocesses)+" fitMPI -n -H -c "+cfgFile+".cfg -r "+str(niters[1])+" -m 1000000 -t 1.0 -x 1 -f 0.15" 
                 pipeCmd=' > fit.log'
                 # cmd="fit -c "+cfgFile+".cfg -r "+str(niters[1])+" -m 1000000 -t 1.0 -x 1 -f 0.15"
                 # cmd="mpirun -np "+str(nprocesses)+" fitMPI -c "+cfgFile+".cfg -r "+str(niters[1])+" -m 1000000 -t 1.0 -x 1 -f 0.15" 
@@ -92,7 +92,7 @@ def main():
                 os.system(cmd+pipeCmd)
                
                 # Move results to the desired folder
-                ofolder=t+"_"+str(i) 
+                ofolder="/d/home/septian/EtaPi0Analysis/run/mass_dependent_fits/"+t+"_"+str(i)
                 os.system("mkdir -p "+ofolder)
                 os.system("mv -f etapi_result*.fit "+ofolder+" 2>/dev/null")
                 os.system("mv -f "+cfgFile+"*.cfg "+ofolder+" 2>/dev/null")

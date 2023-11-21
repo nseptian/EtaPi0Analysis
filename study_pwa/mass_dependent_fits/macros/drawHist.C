@@ -1,5 +1,6 @@
-const TString mainDir = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/";
-const TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/";
+// const TString mainDir = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/";
+const TString mainDir = "/d/home/septian/EtaPi0Analysis/run/mass_dependent_fits/";
+const TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const TString outDir = "/d/home/septian/EtaPi0Analysis/run/plots";
 // TString rootHistFitResult = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/etapi_plot_D2++_pD2++.root";
 // TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/t010020_m104172_test/";
@@ -31,30 +32,30 @@ const TString extraTagPhase1 = "nominal_wPhotonSyst";
 const TString dataTagPhase1 = "Phase1";
 
 // user config for plotting from flat trees
-const Int_t NBranchFlatTree = 8;
-const TString branchFlatTree[NBranchFlatTree] = {"Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","cosTheta_eta_gj","Weight"};
-enum brVar{Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,cosTheta_eta_gj,Weight};
-Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
+const Int_t NBranchFlatTree = 9;
+const TString branchFlatTree[NBranchFlatTree] = {"Ebeam","Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","cosTheta_eta_gj","Weight"};
+enum brVar{Ebeam,Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,cosTheta_eta_gj,Weight};
+Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
 
-const Int_t NBranchFlatTreeThrown = 2;
-const TString branchFlatTreeThrown[NBranchFlatTreeThrown] = {"Mpi0eta_thrown","cosTheta_eta_gj_thrown"};
-enum brVarThrown{Mpi0eta_thrown,cosTheta_eta_gj_thrown};
-Float_t branchVarThrown[NBranchFlatTreeThrown] = {1.0,1.0};
+const Int_t NBranchFlatTreeThrown = 3;
+const TString branchFlatTreeThrown[NBranchFlatTreeThrown] = {"Ebeam_thrown","Mpi0eta_thrown","cosTheta_eta_gj_thrown"};
+enum brVarThrown{Ebeam_thrown,Mpi0eta_thrown,cosTheta_eta_gj_thrown};
+Float_t branchVarThrown[NBranchFlatTreeThrown] = {1.0,1.0,1.0};
 
-const Bool_t isPlotFromFlatTrees = kTRUE;
+const Bool_t isPlotFromFlatTrees = kFALSE;
 const Bool_t isPlotVanHopeAngle = kFALSE;
 const Bool_t isPlotMPi0Eta = kFALSE;
 
 // user config for etapi_plotter
-const Bool_t isRunEtaPiPlotter = kFALSE;
-const Bool_t isPlotWaves = kFALSE;
+const Bool_t isRunEtaPiPlotter = kTRUE;
+const Bool_t isPlotWaves = kTRUE;
 const TString etaPiPlotterOutName = "etapi_plot";
 const TString histBaseName[4] = {"EtaPi0_000_", "EtaPi0_045_", "EtaPi0_090_", "EtaPi0_135_"};
 const TString dataAmpTools[4] = {"dat","bkg","acc","gen"};
 const TString histMEtaPiAccName = "Metapi_40MeVBinacc";
 const TString histMEtaPiSigName = "Metapi_40MeVBindat";
 const TString histMetaPiBkgName = "Metapi_40MeVBinbkg";
-const TString strWave = "D1--_D0+-_D1+-_D0++_D1++_D2++";
+const TString strWave = "D1+-_D2++";
 const TString strFitFracWave = "D";
 
 const Bool_t isPlotA2CS = kFALSE;
@@ -179,10 +180,10 @@ void Hist1DManager::FillFromTree(TTree *tTree) {
     }
 
     if (vBrVarThrown.size()>0) {
-        cout << "Filling histograms from flat tree thrown with branch variable(s):" << endl;
+        cout << "Filling histograms from thrown flat tree with branch variable(s):" << endl;
         for (Int_t iBr=0;iBr<vBrVarThrown.size();iBr++) cout << vBrNameThrown[iBr] << endl;
     }
-
+    
     for (Int_t iHist=0;iHist<NHist;iHist++) {
         for (Int_t iEvent=0;iEvent<tTree->GetEntries();iEvent++) {
             tTree->GetEntry(iEvent);
@@ -846,8 +847,9 @@ void PlotFromFlatTree(){
 
     TCanvas *c_ft1 = new TCanvas("c_ft","c_ft",1600,1200);
     c_ft1->Divide(2,2);
-    TCanvas *c_pol[2];
-    for (Int_t i=0;i<2;i++) {
+    const Int_t NPlotSplitPol = 3;
+    TCanvas *c_pol[NPlotSplitPol];
+    for (Int_t i=0;i<NPlotSplitPol;i++) {
         c_pol[i] = new TCanvas(Form("c_pol_%d",i),Form("c_pol_%d",i),1600,1200);
         c_pol[i]->Divide(2,2);
     }
@@ -855,6 +857,8 @@ void PlotFromFlatTree(){
     TLatex *lLatex = new TLatex();
     lLatex->SetTextSize(0.04);
     lLatex->SetTextAlign(22);
+
+    TLegend *leg = new TLegend(0.2,0.8,0.4,0.95);
 
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
         // manager for histograms for polarization sum
@@ -886,6 +890,7 @@ void PlotFromFlatTree(){
 
             h1ManagerRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
+            h1ManagerRecon->Add(Ebeam,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->FillFromTree(tFlatTreeRecon);
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             h1ManagerMpieta->Add(h1ManagerRecon->GetHist(0),h1ManagerRecon->GetBrVar(0),h1ManagerRecon->GetNBinsX(0),h1ManagerRecon->GetXMin(0),h1ManagerRecon->GetXMax(0));
@@ -895,12 +900,14 @@ void PlotFromFlatTree(){
             Hist1DManager *h1ManagerMCRecon = new Hist1DManager();
             h1ManagerMCRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
             h1ManagerMCRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
+            h1ManagerMCRecon->Add(Ebeam,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
             h1ManagerMCRecon->FillFromTree(tFlatTreeMCRecon);
 
             AssignSelectedBranches(tFlatTreeMCThrown, branchFlatTreeThrown, branchVarThrown, NBranchFlatTreeThrown);
             Hist1DManager *h1ManagerMCThrown = new Hist1DManager();
             h1ManagerMCThrown->Add(Mpi0eta_thrown,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
             h1ManagerMCThrown->Add(cosTheta_eta_gj_thrown,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
+            h1ManagerMCThrown->Add(Ebeam_thrown,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
             h1ManagerMCThrown->FillFromTree(tFlatTreeMCThrown);
 
             c_pol[0]->cd(iPol+1);
@@ -913,6 +920,10 @@ void PlotFromFlatTree(){
             h1ManagerMCThrown->GetHist(0)->Draw("HIST SAME");
             h1ManagerRecon->GetHist(0)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(0)->GetMaximum()*1.2);
             lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
+            leg->AddEntry(h1ManagerRecon->GetHist(0),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerMCRecon->GetHist(0),"MC Recon","l");
+            leg->AddEntry(h1ManagerMCThrown->GetHist(0),"MC Thrown","l");
+            leg->Draw();
 
             c_pol[1]->cd(iPol+1);
             h1ManagerRecon->GetHist(1)->SetTitle(Form("%s, %s",polString[iPol].Data(),tBinString[iTBin].Data()));
@@ -924,6 +935,28 @@ void PlotFromFlatTree(){
             h1ManagerMCThrown->GetHist(1)->Draw("HIST SAME");
             h1ManagerRecon->GetHist(1)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(1)->GetMaximum()*1.2);
             lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
+            leg->Clear();
+            leg->AddEntry(h1ManagerRecon->GetHist(1),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerMCRecon->GetHist(1),"MC Recon","l");
+            leg->AddEntry(h1ManagerMCThrown->GetHist(1),"MC Thrown","l");
+            leg->Draw();
+
+            c_pol[2]->cd(iPol+1);
+            h1ManagerRecon->GetHist(2)->SetTitle(Form("%s, %s",polString[iPol].Data(),tBinString[iTBin].Data()));
+            h1ManagerRecon->GetHist(2)->Draw("HIST");
+            h1ManagerMCRecon->GetHist(2)->SetLineColor(kRed);
+            h1ManagerMCRecon->GetHist(2)->Draw("HIST SAME");
+            h1ManagerMCThrown->GetHist(2)->SetLineColor(kGreen);
+            h1ManagerMCThrown->GetHist(2)->SetFillStyle(0);
+            h1ManagerMCThrown->GetHist(2)->Draw("HIST SAME");
+            h1ManagerRecon->GetHist(2)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(2)->GetMaximum()*1.2);
+            lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
+            leg->Clear();
+            leg->AddEntry(h1ManagerRecon->GetHist(2),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerMCRecon->GetHist(2),"MC Recon","l");
+            leg->AddEntry(h1ManagerMCThrown->GetHist(2),"MC Thrown","l");
+            leg->Draw();
+
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             // h1ManagerMCRecon->GetHist(0)->SetLineColor(kRed);
             // h1ManagerMCRecon->GetHist(0)->Draw("HIST SAME");
@@ -943,6 +976,7 @@ void PlotFromFlatTree(){
         }
         c_pol[0]->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
         c_pol[1]->SaveAs(Form("%s/plot_cosThetaGJ_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
+        c_pol[2]->SaveAs(Form("%s/plot_Ebeam_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
     }
 }
 
@@ -1072,7 +1106,8 @@ void gluex_style() {
 	gluex_style->SetNdivisions(508,"xyz"); // some ticks were very bunched, lets reduce the number of divisions to label 
 	// gluex_style->SetOptFit(0111);
 
-	gluex_style->SetHistFillColor(920);   // grey
+	// gluex_style->SetHistFillColor(920);   // grey
+    gluex_style->SetFillStyle(0);
 	gluex_style->SetPalette(kRainBow); // kViridis is perceptually uniform and colorblind friendly
 	gluex_style->cd();
 }
