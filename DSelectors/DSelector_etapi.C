@@ -358,12 +358,12 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 	locT_thrown=-(dTargetP4-locProtonP4_thrown).M2();		
 	//bool bMetapi0_thrown = (locMetapi0_thrown>1.04)*(locMetapi0_thrown<1.56);
 	bool bmandelstamt_thrown=(locT_thrown<1.0)*(locT_thrown>0.1); 
-        bool bBeamE_thrown = (locBeamE_thrown<8.6)*(locBeamE_thrown>8.0);
-        bool bMpi0eta_thrown = (locMetapi0_thrown<1.80)*(locMetapi0_thrown>0.8);
-        bool bTopology = locThrownTopology==topologyString; 
-        bool selection_thrown=bTopology;//*bBeamE_thrown;//*bmandelstamt_thrown*bMpi0eta_thrown;
-        if (dIsMC*!selection_thrown)
-            return kTRUE;
+    bool bBeamE_thrown = (locBeamE_thrown<8.6)*(locBeamE_thrown>8.0);
+    bool bMpi0eta_thrown = (locMetapi0_thrown<1.80)*(locMetapi0_thrown>0.8);
+    bool bTopology = locThrownTopology==topologyString; 
+    bool selection_thrown=bTopology;//*bBeamE_thrown;//*bmandelstamt_thrown*bMpi0eta_thrown;
+    if (dIsMC*!selection_thrown)
+        return kTRUE;
 
 	/************************************************* LOOP OVER COMBOS *************************************************/
 
@@ -395,17 +395,17 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		Int_t locPhoton3NeutralID = dPhoton3Wrapper->Get_NeutralID();
 		Int_t locPhoton4NeutralID = dPhoton4Wrapper->Get_NeutralID();
 
-                // We have access to the truth information so we can construct a scheme to select the true combination
-                //    in the simulated recon tree there is a branch "isTrueCombo" that exists but for some reason
-                //    it is all set to zero for our trees. We can do this manually though by checking PIDs
-                // Set the default values to true so that if we do not have thrown information we do not need to do any matching
-                // USAGE: Filling the output tree with the information allows us to select on the truth
-                //      1. Accidental subtraction statistically selects the true beam photon = isCorrectBeam
-                //      2. Mass sideband subtraction statistically selects the true pi0/eta combination = isCorrectSpect
-                //      The idea is to apply all selections then make a plot. Compare subtraction scheme to correct particles
-                bool isCorrectCombo=true; 
-                bool isCorrectBeam=true;
-                bool isCorrectSpect=true;
+            // We have access to the truth information so we can construct a scheme to select the true combination
+            //    in the simulated recon tree there is a branch "isTrueCombo" that exists but for some reason
+            //    it is all set to zero for our trees. We can do this manually though by checking PIDs
+            // Set the default values to true so that if we do not have thrown information we do not need to do any matching
+            // USAGE: Filling the output tree with the information allows us to select on the truth
+            //      1. Accidental subtraction statistically selects the true beam photon = isCorrectBeam
+            //      2. Mass sideband subtraction statistically selects the true pi0/eta combination = isCorrectSpect
+            //      The idea is to apply all selections then make a plot. Compare subtraction scheme to correct particles
+            bool isCorrectCombo=true; 
+            bool isCorrectBeam=true;
+            bool isCorrectSpect=true;
 	        vector<Int_t> thrownPIDs;
 	        vector<Int_t> parentIDs;
                 vector<Int_t> matchedParentPIDs;
@@ -515,11 +515,14 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
                     // Sometimes we get RF times that are very large, like O(10^5). Lets just keep times within an extra bunch 
 		    dComboWrapper->Set_IsComboCut(true); 
 		    continue; 
-		} 
+		}
 
 		/********************************************* COMBINE FOUR-MOMENTUM ********************************************/
 
 		// DO YOUR STUFF HERE
+		// Reject out-of-time events
+		if (locRelBeamBucket!=0) continue;
+
 		//// CONSTRUCT SIDEBAND WEIGHTS
 		// A hidden step here that required fitting M(pi0) and M(eta) to extract 
 		// 	the peak and widths and associated weightings. Take these number
@@ -532,20 +535,19 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		float etaStd=0.0191;
 		float pi0_sbweight; // this will be used to fill the flat trees
 		float eta_sbweight;
-                //        NOMINAL
-                // [x,y,z] where x,y,z is # of sigmas on one side denoting the end of the 
-                //     signal region, the start of the skip region, and the end of the sb region
-                float nstd_pi0[3] = {3, 4, 5.5};
-                float nstd_eta[3] = {3, 4, 6};
-                //        TIGHTER
-                //float nstd_pi0[3] = {2.75, 4.25, 5.5};
-                //float nstd_eta[3] = {2.75, 4.25, 6};
-                //        LOOSER
-                //float nstd_pi0[3] = {3.25, 3.75, 5.5};
-                //float nstd_eta[3] = {3.25, 3.75, 6};
-
-                float weight_pi0=-1*nstd_pi0[0]/(nstd_pi0[2]-nstd_pi0[1]); // this is fixed valued for the weight of the pi0 sidebands
-                float weight_eta=-1*nstd_eta[0]/(nstd_eta[2]-nstd_eta[1]); // this is fixed valued for the weight of the eta sidebands
+        //        NOMINAL
+        // [x,y,z] where x,y,z is # of sigmas on one side denoting the end of the 
+        //     signal region, the start of the skip region, and the end of the sb region
+        float nstd_pi0[3] = {3, 4, 5.5};
+        float nstd_eta[3] = {3, 4, 6};
+        //        TIGHTER
+        //float nstd_pi0[3] = {2.75, 4.25, 5.5};
+        //float nstd_eta[3] = {2.75, 4.25, 6};
+        //        LOOSER
+        //float nstd_pi0[3] = {3.25, 3.75, 5.5};
+        //float nstd_eta[3] = {3.25, 3.75, 6};
+        float weight_pi0=-1*nstd_pi0[0]/(nstd_pi0[2]-nstd_pi0[1]); // this is fixed valued for the weight of the pi0 sidebands
+        float weight_eta=-1*nstd_eta[0]/(nstd_eta[2]-nstd_eta[1]); // this is fixed valued for the weight of the eta sidebands
 		// The signal regions are both +/- 3 sigmas around the peak the left and right sidebands 
 		// 	which are some N sigmas wide with some M sigma skip region included 
 		// 	between the signal and sideband regions. The weight = the ratio the lengths
@@ -559,7 +561,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		else if (Meta > etaMean-nstd_eta[2]*etaStd && Meta < etaMean-nstd_eta[1]*etaStd){ eta_sbweight=weight_eta; }
 		else { eta_sbweight=0; }
 		float sbweight=pi0_sbweight*eta_sbweight;
-		float weight=sbweight;//*locHistAccidWeightFactor
+		float weight=sbweight;//sbweight*locHistAccidWeightFactor
                 //weight=1;
 		// Reject combinations with zero weights. Zero weights take up space and do nothing. 
 		// 	Worse, it might cause the amptools unbinned likelihood fits to break
@@ -572,7 +574,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		//    genmc = thrown trees created during simulation process
 		bool bSignalRegion;
 		float branchWeight;
-                int choice=3;
+                int choice=1;
 		//---------CHOICE 1 FOR "data" RUN OVER SIGNAL/DATA-------------
                 if (choice==1){
 		    bSignalRegion=(pi0_sbweight==1)*(eta_sbweight==1)*(locHistAccidWeightFactor==1); // Keep combos ONLY in the signal region
@@ -665,8 +667,8 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		float Metap=(locEtaP4+locProtonP4).M();
 		float Metapi0=(locPi0P4+locEtaP4).M();
 		float mandelstam_t=-(dTargetP4-locProtonP4).M2();		
-                float mandelstam_teta = -(locBeamP4-locEtaP4).M2();
-                float mandelstam_tpi0 = -(locBeamP4-locPi0P4).M2();
+        float mandelstam_teta = -(locBeamP4-locEtaP4).M2();
+        float mandelstam_tpi0 = -(locBeamP4-locPi0P4).M2();
 		// Select on coherent peak for region of high polarization. The AMPTOOLS fit using Zlm amplitudes will use the polarization
 		// 	for extra separation power (will tell us something about the production mechanism)
 		bool bBeamEnergy=(locBeamP4.E()>8.0)*(locBeamP4.E()<8.6); 
@@ -710,18 +712,18 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
    		      (eta_res.Vect()).Dot(z) );
    		float cosTheta_gj = angles.CosTheta();
    		float phi_gj = angles.Phi();
-                TVector3 eps(TMath::Cos(locPolarizationAngle*TMath::DegToRad()), TMath::Sin(locPolarizationAngle*TMath::DegToRad()), 0.0); // beam polarization vector
-                float Phi = TMath::ATan2(y.Dot(eps), beam_cm.Vect().Unit().Dot(eps.Cross(y)))*radToDeg;
-                float mandelstam_t0 = -(TMath::Power(-(locPi0P4+locEtaP4).M2()/(2*(locBeamP4+dTargetP4).M()),2)
-                                        -TMath::Power(beam_cm.Vect().Mag()-(pi0_cm+eta_cm).Vect().Mag(),2));
-                float mandelstam_tp = mandelstam_t-mandelstam_t0;
-                std::tuple<double, double> vh = dAnalysisUtilities.Calc_vanHoveCoord(recoil_cm,pi0_cm,eta_cm);
-                float q = get<0>(vh);
-                float omega = get<1>(vh);
-                float vanHove_x=q*cos(omega);
-                float vanHove_y=q*sin(omega);
-                bool bVH_pi0p = -29.0*atan(-1.05*(locPi0P4+locEtaP4).M()+2.78)+328 > omega*radToDeg;
-                float pVH=(float)filterOmega(omega*radToDeg,(locPi0P4+locEtaP4).M());
+        TVector3 eps(TMath::Cos(locPolarizationAngle*TMath::DegToRad()), TMath::Sin(locPolarizationAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+        float Phi = TMath::ATan2(y.Dot(eps), beam_cm.Vect().Unit().Dot(eps.Cross(y)))*radToDeg;
+        float mandelstam_t0 = -(TMath::Power(-(locPi0P4+locEtaP4).M2()/(2*(locBeamP4+dTargetP4).M()),2)
+                                -TMath::Power(beam_cm.Vect().Mag()-(pi0_cm+eta_cm).Vect().Mag(),2));
+        float mandelstam_tp = mandelstam_t-mandelstam_t0;
+        std::tuple<double, double> vh = dAnalysisUtilities.Calc_vanHoveCoord(recoil_cm,pi0_cm,eta_cm);
+        float q = get<0>(vh);
+        float omega = get<1>(vh);
+        float vanHove_x=q*cos(omega);
+        float vanHove_y=q*sin(omega);
+        bool bVH_pi0p = -29.0*atan(-1.05*(locPi0P4+locEtaP4).M()+2.78)+328 > omega*radToDeg;
+        float pVH=(float)filterOmega(omega*radToDeg,(locPi0P4+locEtaP4).M());
 
 		// 5. With the above selections and sidebands stucture, the subtraction near threshold has problems
 		// 	The backgrounds that populate the near threshold region are pi0pi0->4g and omega->3gamma
@@ -737,9 +739,9 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
                 // Turn off some selections (if you want) related to M(4g) and t so that we can use another program to
                 //      split the final flat trees up. This should lower our total run times
 		bMetapi0=true; 
-                bmandelstamt=true; 
-                bMpi0p=true;
-                bLowMassAltCombo=true;
+        bmandelstamt=true; 
+        bMpi0p=true;
+        bLowMassAltCombo=true;
 
                 ///////////////////////////////////////////////////////////////////////////////////
                 ///////////////////////////////////////////////////////////////////////////////////
