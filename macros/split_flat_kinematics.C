@@ -1,9 +1,19 @@
+const string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+const string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+const Bool_t isSplitDataD = kTRUE;
+const Bool_t isSplitBkgndD = kFALSE;
+const Bool_t isSplitAccD = kFALSE;
+const Bool_t isSplitDataMC = kTRUE;
+const Bool_t isSplitBkgndMC = kFALSE;
+const Bool_t isSplitAccMC = kFALSE;
+const Bool_t isSplitGenMC = kTRUE;
+
 bool filterOmega(float omega, float Mpi0eta){
     // omega should be in degrees and mass in GeV
     return -29.0*atan(-1.05*Mpi0eta+2.78)+328 > omega;
 }
 
-void split_flat_kinematics(){
+void split_flat_kinematics(string otag, string itag){
     // ********************************************
     // THIS PROGRAM WILL SPLIT ROOT FILES INTO DIFFERENT BEAM ENERGY + T BINNINGS
     //    BOTH THE THROWN AND RECON VALUES WILL BE USED IN DETERMINING BINNING 
@@ -23,19 +33,21 @@ void split_flat_kinematics(){
     // string itag="_nominal_wPhotonSyst";
 
     // string ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
-    string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+    // string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
     // vector<string> runs={"2017_1","2018_1","2018_8"};
 
-    string otag="_test1";
-    string itag="";
-
-    string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+    // string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
     bool ignorePolarization=false; // Kmatrix stuff has only one polarization, so ignore. No polarization in Flat MC so ignore also
     vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
     vector<string> files;
     for (auto run: runs){
-        files.push_back("D"+run+"_selected"+itag+"_data_flat.root");
-        files.push_back("D"+run+"_selected"+itag+"_bkgnd_flat.root");
+        if (isSplitDataD) files.push_back("D"+run+"_selected_"+itag+"_data_flat.root");
+        if (isSplitBkgndD) files.push_back("D"+run+"_selected_"+itag+"_bkgnd_flat.root");
+        if (isSplitAccD) files.push_back("D"+run+"_selected_"+itag+"_acc_flat.root");
+        if (isSplitDataMC) files.push_back("F"+run+"_selected_"+itag+"_data_flat.root");
+        if (isSplitBkgndMC) files.push_back("F"+run+"_selected_"+itag+"_bkgnd_flat.root");
+        if (isSplitAccMC) files.push_back("F"+run+"_selected_"+itag+"_acc_flat.root");
+        if (isSplitGenMC) files.push_back("F"+run+"_gen_data_flat.root");
         // files.push_back("D"+run+"_selected"+itag+"_acc_flat.root");
         // files.push_back("F"+run+"_selected"+itag+"_acc_flat.root");
         // files.push_back("F"+run+"_gen_data_flat.root");
@@ -83,7 +95,7 @@ void split_flat_kinematics(){
     if (forceSplitting){
         for (auto const& t: ts){
             for (auto const& m: mpi0etas){
-                string floc=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/";
+                string floc=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/";
                 gSystem->Exec(("mkdir -p "+floc).c_str()); } }
 
         for (auto file: files){
@@ -106,8 +118,8 @@ void split_flat_kinematics(){
             for (auto const& pol: pols){ it=0;
                 for (auto const& t: ts){ im=0;
                     for (auto const& m: mpi0etas){
-                        string floc=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/";
-                        newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+file).c_str(),"recreate");
+                        string floc=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/";
+                        newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+otag+"_"+file).c_str(),"recreate");
                         newtree[ip][it][im] = oldtree->CloneTree(0);
                         ++im;
                     } ++it;
@@ -229,18 +241,18 @@ void split_flat_kinematics(){
             for (auto const& m: mpi0etas){ 
                 for (int j=0; j<nFileTypes; ++j){ ip=0;
                     string remergePolCmd="hadd -f ";
-                    remergePolCmd+=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"polALL_t"+t.first+"_m"+m.first+otag+"_";
+                    remergePolCmd+=ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"polALL_t"+t.first+"_m"+m.first+otag+"_";
                     remergePolCmd+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                     for (auto const& pol: pols){
                         string cmd;
                         string target;
                         for (int i=0; (int)i<runs.size(); ++i){
                             if (i==0){
-                                target=ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_";
+                                target=ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_";
                                 target+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                                 cmd="hadd -f "+target;
                             }
-                            cmd+=" "+ofolder+"t"+t.first+"_m"+m.first+otag+itag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+files[nFileTypes*i+j];
+                            cmd+=" "+ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+files[nFileTypes*i+j];
                         }
                         cout << endl << cmd << endl;
                         gSystem->Exec(cmd.c_str()); 
