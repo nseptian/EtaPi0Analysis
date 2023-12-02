@@ -56,7 +56,7 @@ runSelector('"/d/grid17/sdobbs/gluex_data/2019-11/analysis-ver06/tree_pi0eta__B4
 # runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M/root/trees/tree_pi0eta__B4_M17_M7_gen_amp_071362_000_decay_evtgen.root"',reconTreeName,tag,1,proof_Nthreads,recon_cfiles)
 runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/trees/tree_pi0eta__B4_M17_M7*"',reconTreeNameMC,"F"+dataset+"_selected_"+tag,1,proof_Nthreads,recon_cfiles)
 runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/trees/tree_pi0eta__B4_M17_M7*"',reconTreeNameMC,"F"+dataset+"_selected_"+tag,3,proof_Nthreads,recon_cfiles)
-runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/thrown/tree_thrown_gen_amp*"',thrownTreeName,"F"+dataset+"_gen",1,proof_Nthreads,thrown_cfiles)
+# runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M_e8086/root/thrown/tree_thrown_gen_amp*"',thrownTreeName,"F"+dataset+"_gen",1,proof_Nthreads,thrown_cfiles)
 # runSelector('"/d/grid17/septian/etapi0_mc_flat_2019_5M/root/thrown/tree_thrown_gen_amp_072677_000_decay_evtgen.root"',
 #        thrownTreeName,tag,1,proof_Nthreads,thrown_cfiles)
 

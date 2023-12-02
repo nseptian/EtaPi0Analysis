@@ -1,2 +1,7 @@
-0.*/
+DSelectors/0.*/
+DSelectors/*.d
+DSelectors/*.so
+DSelectors/*.pcm
 run/
+legacy/
+*.pyc

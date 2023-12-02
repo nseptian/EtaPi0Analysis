@@ -1,11 +1,11 @@
 const string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const Bool_t isSplitDataD = kTRUE;
-const Bool_t isSplitBkgndD = kFALSE;
+const Bool_t isSplitBkgndD = kTRUE;
 const Bool_t isSplitAccD = kFALSE;
-const Bool_t isSplitDataMC = kTRUE;
+const Bool_t isSplitDataMC = kFALSE;
 const Bool_t isSplitBkgndMC = kFALSE;
-const Bool_t isSplitAccMC = kFALSE;
+const Bool_t isSplitAccMC = kTRUE;
 const Bool_t isSplitGenMC = kTRUE;
 
 bool filterOmega(float omega, float Mpi0eta){
@@ -119,7 +119,7 @@ void split_flat_kinematics(string otag, string itag){
                 for (auto const& t: ts){ im=0;
                     for (auto const& m: mpi0etas){
                         string floc=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/";
-                        newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+otag+"_"+file).c_str(),"recreate");
+                        newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+file).c_str(),"recreate");
                         newtree[ip][it][im] = oldtree->CloneTree(0);
                         ++im;
                     } ++it;

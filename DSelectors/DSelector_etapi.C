@@ -521,7 +521,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 
 		// DO YOUR STUFF HERE
 		// Reject out-of-time events
-		if (locRelBeamBucket!=0) continue;
+		// if (locRelBeamBucket!=0) continue;
 
 		//// CONSTRUCT SIDEBAND WEIGHTS
 		// A hidden step here that required fitting M(pi0) and M(eta) to extract 
@@ -561,7 +561,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		else if (Meta > etaMean-nstd_eta[2]*etaStd && Meta < etaMean-nstd_eta[1]*etaStd){ eta_sbweight=weight_eta; }
 		else { eta_sbweight=0; }
 		float sbweight=pi0_sbweight*eta_sbweight;
-		float weight=sbweight;//sbweight*locHistAccidWeightFactor
+		float weight=sbweight*locHistAccidWeightFactor;//sbweight*locHistAccidWeightFactor
                 //weight=1;
 		// Reject combinations with zero weights. Zero weights take up space and do nothing. 
 		// 	Worse, it might cause the amptools unbinned likelihood fits to break
@@ -574,7 +574,7 @@ Bool_t DSelector_etapi::Process(Long64_t locEntry)
 		//    genmc = thrown trees created during simulation process
 		bool bSignalRegion;
 		float branchWeight;
-                int choice=1;
+                int choice=3;
 		//---------CHOICE 1 FOR "data" RUN OVER SIGNAL/DATA-------------
                 if (choice==1){
 		    bSignalRegion=(pi0_sbweight==1)*(eta_sbweight==1)*(locHistAccidWeightFactor==1); // Keep combos ONLY in the signal region
