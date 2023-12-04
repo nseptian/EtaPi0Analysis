@@ -43,13 +43,13 @@ def main():
     # tmins=[0.1] #
     # tmaxs=[0.2] #
 
-    # ts=["0200325"] #
-    # tmins=[0.2] #
-    # tmaxs=[0.325] #
+    ts=["0200325"] #
+    tmins=[0.2] #
+    tmaxs=[0.325] #
 
-    ts=["0325050"] #
-    tmins=[0.325] #
-    tmaxs=[0.5] #
+    # ts=["0325050"] #
+    # tmins=[0.325] #
+    # tmaxs=[0.5] #
 
     # ts=["0325050","050075","075100"] #
     # tmins=[0.325,0.5,0.75] #
@@ -81,13 +81,12 @@ def main():
         for j, tmin, tmax in zip(range(len(ts)),tmins,tmaxs):
             t=ts[j]
         
-            os.system("rm -f "+fitFileName)
-            os.system("rm -f fit*log")
-        
             for ic,m,mmin,mmax,pcwsBin in zip(range(len(ms)),ms,mmins,mmaxs,pcwsBins):
                 ofolder="/d/home/septian/EtaPi0Analysis/run/mass_dependent_fits/"+t+"_"+tag+"_"+str(i)
                 os.system("mkdir -p "+ofolder)
                 os.chdir(ofolder)
+                os.system("rm -f "+fitFileName)
+                os.system("rm -f fit*log")
                 
                 cfgFile=baseCfgFile.split("/")[-1].split(".")[0]+"_"+"m"+m+"_t"+t+"_"+tag
                 setup_seed=-1
