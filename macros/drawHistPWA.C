@@ -48,7 +48,7 @@ const Bool_t isPlotMPi0Eta = kFALSE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
-const Bool_t isPlotWaves = kTRUE;
+const Bool_t isPlotWaves = kFALSE;
 const TString etaPiPlotterOutName = "etapi_plot";
 const TString histBaseName[4] = {"EtaPi0_000_", "EtaPi0_045_", "EtaPi0_090_", "EtaPi0_135_"};
 const TString dataAmpTools[4] = {"dat","bkg","acc","gen"};
@@ -65,11 +65,13 @@ const TString strWave[5] = {"S0+-_S0++",
 // const TString strWave = "S0+-_S0++";
 const TString strFitFracWave = "D";
 
-const Bool_t isPlotA2CS = kFALSE;
+const Bool_t isPlotA2CS = kTRUE;
 const TString etaPiPlotterOutLogName = "etapi_plotter_output.log";
 const Double_t lum = 132.4; // pb^-1
 const TString fileNameA2CSTheory = "/d/home/septian/EtaPi0Analysis/run/theory_pred/Bands_TMD_A2_cs.txt";
-const Bool_t isStudyGenMC = kFALSE;
+const Float_t A2CSPhase1[5] = {0.2600,0.1173,0.0448,0.0521,0.0274};
+const Float_t A2CSPhase1StatErr[5] = {0.0324,0.0166,0.0084,0.0067,0.0047};
+const Float_t A2CSPhase1SystErr[5] = {0.0561,0.0285,0.0087,0.0074,0.0030};
 
 // waves=["S0+-_S0++",
 //        "D1--_D0+-_D1+-_D0++_D1++_D2++",
@@ -509,17 +511,17 @@ void drawHistPWA(){
             h1MEtaPiSigSum[iTBin]->SetMarkerStyle(21);
             h1MEtaPiSigSum[iTBin]->DrawCopy("P");
 
-            hs[iTBin] = new THStack(Form("hs_%d",iTBin),"hs");
-            h1MEtaPiAccSSum[iTBin]->SetLineColor(11);
-            h1MEtaPiAccSSum[iTBin]->SetLineWidth(1);
-            h1MEtaPiAccSSum[iTBin]->SetFillColor(11);
-            h1MEtaPiAccSSum[iTBin]->SetFillStyle(1001);
-            hs[iTBin]->Add(static_cast<TH1*>(h1MEtaPiAccSSum[iTBin]->Clone()),"hist");
-            h1MEtaPiAccDSum[iTBin]->SetLineColor(kRed);
-            h1MEtaPiAccDSum[iTBin]->SetLineWidth(1);
-            h1MEtaPiAccDSum[iTBin]->SetFillColorAlpha(kRed,0.5);
-            h1MEtaPiAccDSum[iTBin]->SetFillStyle(1001);
-            hs[iTBin]->Add(static_cast<TH1*>(h1MEtaPiAccDSum[iTBin]->Clone()),"hist");
+            // hs[iTBin] = new THStack(Form("hs_%d",iTBin),"hs");
+            // h1MEtaPiAccSSum[iTBin]->SetLineColor(11);
+            // h1MEtaPiAccSSum[iTBin]->SetLineWidth(1);
+            // h1MEtaPiAccSSum[iTBin]->SetFillColor(11);
+            // h1MEtaPiAccSSum[iTBin]->SetFillStyle(1001);
+            // hs[iTBin]->Add(static_cast<TH1*>(h1MEtaPiAccSSum[iTBin]->Clone()),"hist");
+            // h1MEtaPiAccDSum[iTBin]->SetLineColor(kRed);
+            // h1MEtaPiAccDSum[iTBin]->SetLineWidth(1);
+            // h1MEtaPiAccDSum[iTBin]->SetFillColorAlpha(kRed,0.5);
+            // h1MEtaPiAccDSum[iTBin]->SetFillStyle(1001);
+            // hs[iTBin]->Add(static_cast<TH1*>(h1MEtaPiAccDSum[iTBin]->Clone()),"hist");
             // h1MEtaPiAccpDSum[iTBin]->SetLineColor(kGreen);
             // h1MEtaPiAccpDSum[iTBin]->SetFillColor(kGreen);
             // h1MEtaPiAccpDSum[iTBin]->SetFillStyle(3001);
@@ -557,27 +559,43 @@ void drawHistPWA(){
         TCanvas *cA2CS = new TCanvas("cA2CS", "cA2CS",1600,800);
         vector<vector<Double_t>> vA2CS_theory = ReadCSV(fileNameA2CSTheory,kFALSE);
         TGraphAsymmErrors *gA2CS_theory = new TGraphAsymmErrors();
+        
         for (Int_t iPoint=0;iPoint<vA2CS_theory.size();iPoint++) {
             gA2CS_theory->AddPoint(vA2CS_theory[iPoint][0],vA2CS_theory[iPoint][2]);
             gA2CS_theory->SetPointError(iPoint,0,0,vA2CS_theory[iPoint][2]-vA2CS_theory[iPoint][1],vA2CS_theory[iPoint][3]-vA2CS_theory[iPoint][2]);
         }
-        cA2CS->cd();
-        TGraph *gA2CS = new TGraph();
+        TGraphErrors *gA2CS = new TGraphErrors();
+        TGraphErrors *gA2CSPhase1StatErr = new TGraphErrors();
+        TGraphErrors *gA2CSPhase1SystErr = new TGraphErrors();
         for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
             TString fName = fitResultDir[iTBin] + etaPiPlotterOutLogName;
             vector<Double_t> accCorrYield = GetAccCorrYield(fName);
             Double_t dt = tMax[iTBin]-tMin[iTBin];
             Double_t dsigdt = accCorrYield[0]/(1000000*lum*dt*0.0565);
-            gA2CS->AddPoint((tMin[iTBin]+tMax[iTBin])/2,dsigdt);
-            cout << endl << (tMin[iTBin]+tMax[iTBin])/2 << " " << accCorrYield[0] << endl;
-            // Double_t AccCorrYields = GetAccCorrYield(fName);
+            Double_t dsigdtStatErr = accCorrYield[1]/(1000000*lum*dt*0.0565);
+            Double_t toffset = 0.005;
+            gA2CS->AddPoint((tMin[iTBin]+tMax[iTBin])/2+toffset,dsigdt);
+            gA2CS->SetPointError(iTBin,0,dsigdtStatErr);
+            // cout << endl << (tMin[iTBin]+tMax[iTBin])/2 << " " << accCorrYield[0] << " +- " << accCorrYield[1] << endl;
+            gA2CSPhase1StatErr->AddPoint((tMin[iTBin]+tMax[iTBin])/2-toffset,A2CSPhase1[iTBin]);
+            gA2CSPhase1StatErr->SetPointError(iTBin,0.005,A2CSPhase1StatErr[iTBin]);
+            gA2CSPhase1SystErr->AddPoint((tMin[iTBin]+tMax[iTBin])/2-toffset,A2CSPhase1[iTBin]);
+            gA2CSPhase1SystErr->SetPointError(iTBin,0.005,A2CSPhase1SystErr[iTBin]);
         }
+
+        cA2CS->cd();
         gA2CS_theory->SetLineColor(kBlue);
         gA2CS_theory->SetFillColor(kBlue);
         gA2CS_theory->SetFillStyle(3002);
         gA2CS_theory->GetXaxis()->SetRangeUser(0.1,1.0);
         gA2CS_theory->GetXaxis()->SetTitle("|t| (GeV^{2})");
+        gA2CS_theory->GetXaxis()->SetTitleSize(0.05);
+        gA2CS_theory->GetXaxis()->SetTitleOffset(1.2);
+        gA2CS_theory->GetXaxis()->SetLabelSize(0.04);
         gA2CS_theory->GetYaxis()->SetTitle("#frac{d#sigma}{dt} #left(#frac{#mub}{GeV^{2}}#right)");
+        gA2CS_theory->GetYaxis()->SetTitleSize(0.05);
+        gA2CS_theory->GetYaxis()->SetTitleOffset(1.2);
+        gA2CS_theory->GetYaxis()->SetLabelSize(0.04);
         gA2CS_theory->Draw("ca3");
 
         gA2CS->SetMarkerStyle(47);
@@ -586,9 +604,22 @@ void drawHistPWA(){
         gA2CS->SetLineColor(kRed);
         gA2CS->Draw("PSAME");
 
-        TLegend *legA2CS = new TLegend(0.6,0.65,0.8,0.85);
+        gA2CSPhase1StatErr->SetLineWidth(0);
+        gA2CSPhase1StatErr->SetFillColorAlpha(kBlack,0.5);
+        gA2CSPhase1StatErr->SetFillStyle(1001);
+        gA2CSPhase1StatErr->Draw("2SAME");
+
+        gA2CSPhase1SystErr->SetMarkerStyle(20);
+        gA2CSPhase1SystErr->SetMarkerSize(2);
+        gA2CSPhase1SystErr->SetMarkerColor(kBlack);
+        gA2CSPhase1SystErr->SetLineColor(kBlack);
+        gA2CSPhase1SystErr->Draw("PSAME");
+
+        TLegend *legA2CS = new TLegend(0.6,0.5,0.8,0.85);
         legA2CS->AddEntry(gA2CS_theory,"#splitline{TMD predictions}{E_{#gamma}=8.5 GeV}","f");
-        legA2CS->AddEntry(gA2CS,"#splitline{GlueX 2019-11}{E_{#gamma}=[8.0,8.6] GeV}","p");
+        legA2CS->AddEntry(gA2CS,"#splitline{GlueX 2019-11}{E_{#gamma}=[8.0,8.6] GeV}","pl");
+        legA2CS->AddEntry(gA2CSPhase1SystErr,"#splitline{GlueX Phase-I}{E_{#gamma}=[8.2,8.8] GeV}","pl");
+        legA2CS->AddEntry(gA2CSPhase1StatErr,"Statistical Unc.","f");
         legA2CS->SetTextSize(0.03);
         legA2CS->SetBorderSize(0);
         legA2CS->Draw();
@@ -870,7 +901,8 @@ vector<Double_t> GetAccCorrYield(TString fileName){
     }
     // for (Int_t i=0;i<fitFrac.size();i++) cout << fitFrac[i] << endl;
     Double_t accCorrYield = totalEvents*fitFrac;
-    Double_t accCorrYieldErr = TMath::Sqrt(fitFracErr*fitFracErr*totalEvents*totalEvents+totalEventsErr*totalEventsErr*fitFrac*fitFrac);
+    Double_t accCorrYieldErr = accCorrYield*TMath::Sqrt((fitFracErr/fitFrac)*(fitFracErr/fitFrac) + (totalEventsErr/totalEvents)*(totalEventsErr/totalEvents));
+    // Double_t accCorrYieldErr = TMath::Sqrt(fitFracErr*fitFracErr*totalEvents*totalEvents+totalEventsErr*totalEventsErr*fitFrac*fitFrac);
 
     cout << endl << "Reading values from " << fileName << endl;
     cout << "Total events: " << totalEvents << " +- " << totalEventsErr << endl;
