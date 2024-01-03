@@ -42,9 +42,9 @@ const TString branchFlatTreeThrown[NBranchFlatTreeThrown] = {"Ebeam_thrown","Mpi
 enum brVarThrown{Ebeam_thrown,Mpi0eta_thrown,cosTheta_eta_gj_thrown};
 Float_t branchVarThrown[NBranchFlatTreeThrown] = {1.0,1.0,1.0};
 
-const Bool_t isPlotFromFlatTrees = kFALSE;
+const Bool_t isPlotFromFlatTrees = kTRUE;
 const Bool_t isPlotVanHopeAngle = kFALSE;
-const Bool_t isPlotMPi0Eta = kFALSE;
+const Bool_t isPlotMPi0Eta = kTRUE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
@@ -65,7 +65,7 @@ const TString strWave[5] = {"S0+-_S0++",
 // const TString strWave = "S0+-_S0++";
 const TString strFitFracWave = "D";
 
-const Bool_t isPlotA2CS = kTRUE;
+const Bool_t isPlotA2CS = kFALSE;
 const TString etaPiPlotterOutLogName = "etapi_plotter_output.log";
 const Double_t lum = 132.4; // pb^-1
 const TString fileNameA2CSTheory = "/d/home/septian/EtaPi0Analysis/run/theory_pred/Bands_TMD_A2_cs.txt";
@@ -650,11 +650,11 @@ void PlotFromFlatTree(){
        
         for (auto tbinstrs: tBinString) {
             TString dirTemp = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+extraTag+"/";
-            rootFlatTreeSignalTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_data_flat.root");
-            rootFlatTreeBkgndTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_bkgnd_flat.root");
-            rootFlatTreeReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_D"+dataTag+"_selected_acc_flat.root");
-            rootFlatTreeMCReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_selected_acc_flat.root");
-            rootFlatTreeMCThrownTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+extraTag+"_F"+dataTag+"_gen_data_flat.root");
+            rootFlatTreeSignalTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_D"+dataTag+"_selected_"+extraTag+"_data_flat.root");
+            rootFlatTreeBkgndTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_D"+dataTag+"_selected_"+extraTag+"_bkgnd_flat.root");
+            rootFlatTreeReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_D"+dataTag+"_selected_"+extraTag+"_acc_flat.root");
+            rootFlatTreeMCReconTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_F"+dataTag+"_selected_"+extraTag+"_acc_flat.root");
+            rootFlatTreeMCThrownTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_F"+dataTag+"_gen_data_flat.root");
             TString dirTempPhase1 = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_"+extraTagPhase1+"/";
             rootFlatTreeReconPhase1Temp.push_back(dirTempPhase1+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_selected_"+extraTagPhase1+"_acc_flat.root");
         }
