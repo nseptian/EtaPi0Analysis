@@ -212,6 +212,10 @@ void Hist1DManager::Print(Int_t idxHist, TString fileName, TString drawOption, I
 }
 
 TH1F* Hist1DManager::GetHistSum() {
+    if (NHist==0) {
+        cout << "ERROR: No histogram is added!" << endl;
+        return NULL;
+    }
     TH1F *h1Sum = (TH1F*)vh1[0]->Clone();
     // check if all histograms have the same properties
     for (Int_t iHist=1;iHist<NHist;iHist++) {
@@ -686,13 +690,15 @@ void PlotFromFlatTree(){
             fFlatTreeMCRecon[iPol][iTBin] = TFile::Open(rootFlatTreeMCRecon[iPol][iTBin], "READ");
             cout << rootFlatTreeMCThrown[iPol][iTBin] << endl;
             fFlatTreeMCThrown[iPol][iTBin] = TFile::Open(rootFlatTreeMCThrown[iPol][iTBin], "READ");
-            // cout << rootFlatTreeReconPhase1[iPol][iTBin] << endl;
-            // fFlatTreeReconPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeReconPhase1[iPol][iTBin], "READ");
+            cout << rootFlatTreeReconPhase1[iPol][iTBin] << endl;
+            fFlatTreeReconPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeReconPhase1[iPol][iTBin], "READ");
         }
     }
 
     TCanvas *c_ft1 = new TCanvas("c_ft","c_ft",1600,1200);
     c_ft1->Divide(2,2);
+    TCanvas *c_Mpi0Eta = new TCanvas("c_Mpi0Eta", "c_Mpi0Eta",1600,300);
+    c_Mpi0Eta->Divide(5,1,0.0,0.0);
     const Int_t NPlotSplitPol = 3;
     TCanvas *c_pol[NPlotSplitPol];
     for (Int_t i=0;i<NPlotSplitPol;i++) {
@@ -701,12 +707,18 @@ void PlotFromFlatTree(){
     }
 
     TLatex *lLatex = new TLatex();
-    lLatex->SetTextSize(0.04);
+    lLatex->SetTextSize(0.06);
     lLatex->SetTextAlign(22);
 
     TLegend *leg = new TLegend(0.2,0.8,0.4,0.95);
 
+    TH1F *h1_Mpi0eta_sum;
+    TH1F *h1_Mpi0eta_phase1Sum;
+
+    Double_t Mpi0eta_max = 0.0;
+    TLegend *leg2 = new TLegend(0.3,0.65,0.9,0.85);
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
+        leg2->Clear();
         // manager for histograms for polarization sum
         Hist1DManager *h1ManagerMpieta = new Hist1DManager();
         Hist1DManager *h1ManagerCosThetaGJ = new Hist1DManager();
@@ -726,7 +738,7 @@ void PlotFromFlatTree(){
             TTree *tFlatTreeRecon = (TTree*)fFlatTreeRecon[iPol][iTBin]->Get("kin");
             TTree *tFlatTreeMCRecon = (TTree*)fFlatTreeMCRecon[iPol][iTBin]->Get("kin");
             TTree *tFlatTreeMCThrown = (TTree*)fFlatTreeMCThrown[iPol][iTBin]->Get("kin");
-            // TTree *tFlatTreeReconPhase1 = (TTree*)fFlatTreeReconPhase1[iPol][iTBin]->Get("kin");
+            TTree *tFlatTreeReconPhase1 = (TTree*)fFlatTreeReconPhase1[iPol][iTBin]->Get("kin");
 
             // get branches
             // AssignSelectedBranches(tFlatTreeSignal, branchFlatTree, branchVar);
@@ -734,24 +746,23 @@ void PlotFromFlatTree(){
             AssignSelectedBranches(tFlatTreeRecon, branchFlatTree, branchVar, NBranchFlatTree);
             Hist1DManager *h1ManagerRecon = new Hist1DManager();
 
-            h1ManagerRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
+            h1ManagerRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->Add(Ebeam,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->FillFromTree(tFlatTreeRecon);
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
-            h1ManagerMpieta->Add(h1ManagerRecon->GetHist(0),h1ManagerRecon->GetBrVar(0),h1ManagerRecon->GetNBinsX(0),h1ManagerRecon->GetXMin(0),h1ManagerRecon->GetXMax(0));
-            h1ManagerCosThetaGJ->Add(h1ManagerRecon->GetHist(1),h1ManagerRecon->GetBrVar(1),h1ManagerRecon->GetNBinsX(1),h1ManagerRecon->GetXMin(1),h1ManagerRecon->GetXMax(1));
+            // h1ManagerCosThetaGJ->Add(h1ManagerRecon->GetHist(1),h1ManagerRecon->GetBrVar(1),h1ManagerRecon->GetNBinsX(1),h1ManagerRecon->GetXMin(1),h1ManagerRecon->GetXMax(1));
 
             AssignSelectedBranches(tFlatTreeMCRecon, branchFlatTree, branchVar, NBranchFlatTree);
             Hist1DManager *h1ManagerMCRecon = new Hist1DManager();
-            h1ManagerMCRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
+            h1ManagerMCRecon->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
             h1ManagerMCRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
             h1ManagerMCRecon->Add(Ebeam,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCRecon");
             h1ManagerMCRecon->FillFromTree(tFlatTreeMCRecon);
 
             AssignSelectedBranches(tFlatTreeMCThrown, branchFlatTreeThrown, branchVarThrown, NBranchFlatTreeThrown);
             Hist1DManager *h1ManagerMCThrown = new Hist1DManager();
-            h1ManagerMCThrown->Add(Mpi0eta_thrown,"M_{#eta#pi^{0}} (GeV)",50,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
+            h1ManagerMCThrown->Add(Mpi0eta_thrown,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
             h1ManagerMCThrown->Add(cosTheta_eta_gj_thrown,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
             h1ManagerMCThrown->Add(Ebeam_thrown,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrown");
             h1ManagerMCThrown->FillFromTree(tFlatTreeMCThrown);
@@ -803,6 +814,15 @@ void PlotFromFlatTree(){
             leg->AddEntry(h1ManagerMCThrown->GetHist(2),"MC Thrown","l");
             leg->Draw();
 
+            h1ManagerMpieta->Add(h1ManagerRecon->GetHist(0),h1ManagerRecon->GetBrVar(0),h1ManagerRecon->GetNBinsX(0),h1ManagerRecon->GetXMin(0),h1ManagerRecon->GetXMax(0));
+
+            AssignSelectedBranches(tFlatTreeReconPhase1, branchFlatTree, branchVar, NBranchFlatTree);
+            Hist1DManager *h1ManagerReconPhase1 = new Hist1DManager();
+            h1ManagerReconPhase1->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_ReconPhase1");
+            h1ManagerReconPhase1->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_ReconPhase1");
+            h1ManagerReconPhase1->FillFromTree(tFlatTreeReconPhase1);
+            h1ManagerMpietaPhase1->Add(h1ManagerReconPhase1->GetHist(0),h1ManagerReconPhase1->GetBrVar(0),h1ManagerReconPhase1->GetNBinsX(0),h1ManagerReconPhase1->GetXMin(0),h1ManagerReconPhase1->GetXMax(0));
+
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             // h1ManagerMCRecon->GetHist(0)->SetLineColor(kRed);
             // h1ManagerMCRecon->GetHist(0)->Draw("HIST SAME");
@@ -823,7 +843,45 @@ void PlotFromFlatTree(){
         c_pol[0]->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
         c_pol[1]->SaveAs(Form("%s/plot_cosThetaGJ_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
         c_pol[2]->SaveAs(Form("%s/plot_Ebeam_Recon_SplitPol_%s_%s_%s.pdf",outDir.Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()));
+        // if (iTBin==0) {
+        //     h1_Mpi0eta_sum =  (TH1F*)h1ManagerMpieta->GetHistSum()->Clone();
+        //     h1_Mpi0eta_phase1Sum = (TH1F*)h1ManagerMpietaPhase1->GetHistSum()->Clone();    
+        // }
+        // else {
+        //     h1_Mpi0eta_sum->Add(h1ManagerMpieta->GetHistSum());
+        //     h1_Mpi0eta_phase1Sum->Add(h1ManagerMpietaPhase1->GetHistSum());
+        // }
+        c_Mpi0Eta->cd(iTBin+1);
+        if (iTBin==0) Mpi0eta_max = h1ManagerMpieta->GetHistSum()->GetMaximum();
+        TH1F *h1temp = (TH1F*)h1ManagerMpieta->GetHistSum()->Clone();
+        TH1F *h1Phase1temp = (TH1F*)h1ManagerMpietaPhase1->GetHistSum()->Clone();
+        h1temp->GetYaxis()->SetRangeUser(0,Mpi0eta_max*1.2);
+        h1temp->GetYaxis()->SetTitleOffset(1.2);
+        h1temp->Draw("HIST");
+        
+        h1Phase1temp->SetLineColor(kRed);
+        h1Phase1temp->DrawClone("HIST SAME");
+
+        if (iTBin==NTBin-1) {
+            h1temp->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
+            leg2->AddEntry(h1temp,"GlueX 2019-11","l");
+            leg2->AddEntry(h1Phase1temp,"GlueX Phase-I","l");
+            leg2->SetBorderSize(0);
+            leg2->SetTextSize(0.05);
+            leg2->Draw();
+        }
+        else {
+            h1temp->GetXaxis()->SetTitle("");
+        }
+        if (iTBin!=0) lLatex->DrawLatexNDC(0.5,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+        else lLatex->DrawLatexNDC(0.6,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
     }
+    // c_Mpi0Eta->cd();
+    // h1_Mpi0eta_sum->Draw("HIST");
+    // h1_Mpi0eta_phase1Sum->SetLineColor(kRed);
+    // h1_Mpi0eta_phase1Sum->Draw("HIST SAME");
+    // c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SumT_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTag.Data(),extraTag.Data()));
+    c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SumPol_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTagPhase1.Data(),extraTagPhase1.Data()));
 }
 
 void AssignSelectedBranches(TTree *tTree,const TString branchName[],Float_t branchVar[],Int_t NBrFlatTree){
