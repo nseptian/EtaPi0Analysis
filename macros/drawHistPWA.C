@@ -48,7 +48,7 @@ const Bool_t isPlotMPi0Eta = kTRUE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
-const Bool_t isPlotWaves = kFALSE;
+const Bool_t isPlotWaves = kTRUE;
 const TString etaPiPlotterOutName = "etapi_plot";
 const TString histBaseName[4] = {"EtaPi0_000_", "EtaPi0_045_", "EtaPi0_090_", "EtaPi0_135_"};
 const TString dataAmpTools[4] = {"dat","bkg","acc","gen"};
@@ -103,6 +103,7 @@ class Hist1DManager {
         void PrintHistSum(TString fileName, TString drawOption, Int_t canvasWidth, Int_t canvasHeight);
         Int_t GetSize() {return NHist;}
         brVar GetBrVar(Int_t idxHist) {return vBrVar[idxHist];}
+        brVarThrown GetBrVarThrown(Int_t idxHist) {return vBrVarThrown[idxHist];}
         Int_t GetNBinsX(Int_t idxHist) {return vNBinsX[idxHist];}
         Float_t GetXMin(Int_t idxHist) {return vXMin[idxHist];}
         Float_t GetXMax(Int_t idxHist) {return vXMax[idxHist];}
@@ -218,24 +219,49 @@ TH1F* Hist1DManager::GetHistSum() {
     }
     TH1F *h1Sum = (TH1F*)vh1[0]->Clone();
     // check if all histograms have the same properties
-    for (Int_t iHist=1;iHist<NHist;iHist++) {
-        if (vBrVar[iHist]!=vBrVar[0]) {
-            cout << "ERROR: Histograms have different branches!" << endl;
-            return NULL;
-        }
-        if (vNBinsX[iHist]!=vNBinsX[0]) {
-            cout << "ERROR: Histograms have different number of bins!" << endl;
-            return NULL;
-        }
-        if (vXMin[iHist]!=vXMin[0]) {
-            cout << "ERROR: Histograms have different minimum values!" << endl;
-            return NULL;
-        }
-        if (vXMax[iHist]!=vXMax[0]) {
-            cout << "ERROR: Histograms have different maximum values!" << endl;
-            return NULL;
+
+    if (vBrVar.size()>0) {
+        for (Int_t iHist=1;iHist<NHist;iHist++) {
+            if (vBrVar[iHist]!=vBrVar[0]) {
+                cout << "ERROR: Histograms have different branches!" << endl;
+                return NULL;
+            }
+            if (vNBinsX[iHist]!=vNBinsX[0]) {
+                cout << "ERROR: Histograms have different number of bins!" << endl;
+                return NULL;
+            }
+            if (vXMin[iHist]!=vXMin[0]) {
+                cout << "ERROR: Histograms have different minimum values!" << endl;
+                return NULL;
+            }
+            if (vXMax[iHist]!=vXMax[0]) {
+                cout << "ERROR: Histograms have different maximum values!" << endl;
+                return NULL;
+            }
         }
     }
+
+    if (vBrVarThrown.size()>0) {
+        for (Int_t iHist=1;iHist<NHist;iHist++) {
+            if (vBrVarThrown[iHist]!=vBrVarThrown[0]) {
+                cout << "ERROR: Histograms have different branches!" << endl;
+                return NULL;
+            }
+            if (vNBinsX[iHist]!=vNBinsX[0]) {
+                cout << "ERROR: Histograms have different number of bins!" << endl;
+                return NULL;
+            }
+            if (vXMin[iHist]!=vXMin[0]) {
+                cout << "ERROR: Histograms have different minimum values!" << endl;
+                return NULL;
+            }
+            if (vXMax[iHist]!=vXMax[0]) {
+                cout << "ERROR: Histograms have different maximum values!" << endl;
+                return NULL;
+            }
+        }
+    }
+    
     for (Int_t iHist=1;iHist<NHist;iHist++) h1Sum->Add(vh1[iHist]);
     return h1Sum;
 }
@@ -411,7 +437,8 @@ void drawHistPWA(){
     if (isPlotWaves) {
         // open root files from etapi_plotter
         TCanvas *cWaves = new TCanvas("cWaves", "cWaves",1600,800);
-        cWaves->Divide(5,2,0.0,0.0);
+        cWaves->Divide(5,3,0.0,0.0);
+        TLegend *leg[3];
 
         TFile *fHistFitResultS[NTBin];
         TFile *fHistFitResultD[NTBin];
@@ -433,7 +460,7 @@ void drawHistPWA(){
 
         TH1F *h1MEtaPiAccSSum[NTBin];
         TH1F *h1MEtaPiAccDSum[NTBin];
-        TH1F *h1MEtaPiAccpDSum[NTBin];
+        TH1F *h1MEtaPiAccpDSum[NTBin+1];
         TH1F *h1MEtaPiSigSum[NTBin];
         TH1F *h1MEtaPiBkgSum[NTBin];
         THStack *hs[NTBin+1];
@@ -491,29 +518,60 @@ void drawHistPWA(){
             h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitle("");
             // h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
 
-            cWaves->cd(iTBin+1);
             h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitle("Events / 40 MeV");
+
+            cWaves->cd(iTBin+1);
+            h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
+            h1MEtaPiAccSSum[iTBin]->SetLineColor(11);
+            h1MEtaPiAccSSum[iTBin]->SetLineWidth(1);
+            h1MEtaPiAccSSum[iTBin]->SetFillColor(11);
+            h1MEtaPiAccSSum[iTBin]->SetFillStyle(1001);
+            h1MEtaPiAccSSum[iTBin]->DrawCopy("HIST SAME");
+            if (iTBin!=0) lLatex->DrawLatexNDC(0.3,0.9,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+            else lLatex->DrawLatexNDC(0.45,0.9,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+            if (iTBin==NTBin-1) {
+                leg[0] = new TLegend(0.3,0.7,0.9,0.8);
+                leg[0]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
+                leg[0]->AddEntry(h1MEtaPiAccSSum[iTBin],"S-waves","f");
+                leg[0]->SetBorderSize(0);
+                leg[0]->SetTextSize(0.05);
+                leg[0]->Draw();
+            }
+            gPad->RedrawAxis();
+
+            cWaves->cd(iTBin+1+NTBin);
             h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
             h1MEtaPiAccDSum[iTBin]->SetLineColor(kRed);
             h1MEtaPiAccDSum[iTBin]->SetLineWidth(1);
             h1MEtaPiAccDSum[iTBin]->SetFillColorAlpha(kRed,0.5);
             h1MEtaPiAccDSum[iTBin]->SetFillStyle(1001);
             h1MEtaPiAccDSum[iTBin]->DrawCopy("HIST SAME");
-            if (iTBin!=0) lLatex->DrawLatexNDC(0.3,0.9,Form("%0.3f < t < %0.3f",tMin[iTBin],tMax[iTBin]));
-            else lLatex->DrawLatexNDC(0.45,0.9,Form("%0.3f < |t| < %0.3f",tMin[iTBin],tMax[iTBin]));
             if (iTBin==NTBin-1) {
-                TLegend *leg0 = new TLegend(0.3,0.55,0.9,0.8);
-                leg0->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
-                leg0->AddEntry(h1MEtaPiAccDSum[iTBin],"a_{2}(1320)","f");
-                leg0->SetBorderSize(0);
-                leg0->SetTextSize(0.05);
-                leg0->Draw();
+                leg[1] = new TLegend(0.3,0.7,0.9,0.8);
+                // leg[1]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
+                leg[1]->AddEntry(h1MEtaPiAccDSum[iTBin],"a_{2}(1320)","f");
+                leg[1]->SetBorderSize(0);
+                leg[1]->SetTextSize(0.05);
+                leg[1]->Draw();
             }
 
-            cWaves->cd(iTBin+1+NTBin);
-            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitle("");
-            h1MEtaPiSigSum[iTBin]->SetMarkerStyle(21);
-            h1MEtaPiSigSum[iTBin]->DrawCopy("P");
+            cWaves->cd(iTBin+1+2*NTBin);
+            h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
+            h1MEtaPiAccpDSum[iTBin]->SetLineColor(11);
+            h1MEtaPiAccpDSum[iTBin]->SetLineWidth(1);
+            h1MEtaPiAccpDSum[iTBin]->SetFillColor(11);
+            h1MEtaPiAccpDSum[iTBin]->SetFillStyle(1001);
+            h1MEtaPiAccpDSum[iTBin]->DrawCopy("HIST SAME");
+            if (iTBin==NTBin-1) {
+                leg[2] = new TLegend(0.3,0.7,0.9,0.8);
+                // leg[2]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
+                leg[2]->AddEntry(h1MEtaPiAccpDSum[iTBin],"a_{2}(1700)","f");
+                leg[2]->SetBorderSize(0);
+                leg[2]->SetTextSize(0.05);
+                leg[2]->Draw();
+            }
+            
+            gPad->RedrawAxis();
 
             // hs[iTBin] = new THStack(Form("hs_%d",iTBin),"hs");
             // h1MEtaPiAccSSum[iTBin]->SetLineColor(11);
@@ -530,32 +588,42 @@ void drawHistPWA(){
             // h1MEtaPiAccpDSum[iTBin]->SetFillColor(kGreen);
             // h1MEtaPiAccpDSum[iTBin]->SetFillStyle(3001);
             // hs[iTBin]->Add(static_cast<TH1*>(h1MEtaPiAccpDSum[iTBin]->Clone()),"hist");
+            
+            /* Draw stacked histograms
             hs[iTBin]->Draw("same");
             h1MEtaPiSigSum[iTBin]->DrawCopy("SAME");
             if (iTBin==NTBin-1) {
-                TLegend *leg1 = new TLegend(0.3,0.65,0.9,0.95);
-                leg1->AddEntry(h1MEtaPiSigSum[iTBin],"Data","pl");
-                leg1->AddEntry(h1MEtaPiAccSSum[iTBin],"S-waves","f");
-                leg1->AddEntry(h1MEtaPiAccDSum[iTBin],"a_{2}(1320)","f");
-                leg1->SetBorderSize(0);
-                leg1->SetTextSize(0.05);
-                leg1->Draw();
+                TLegend *leg2 = new TLegend(0.3,0.65,0.9,0.95);
+                leg2->AddEntry(h1MEtaPiSigSum[iTBin],"Data","pl");
+                leg2->AddEntry(h1MEtaPiAccSSum[iTBin],"S-waves","f");
+                leg2->AddEntry(h1MEtaPiAccDSum[iTBin],"a_{2}(1320)","f");
+                leg2->SetBorderSize(0);
+                leg2->SetTextSize(0.05);
+                leg2->Draw();
             };
-            gPad->RedrawAxis();
+            */
             // h1MEtaPiAccDSum[iTBin]->DrawCopy("HIST SAME");
             // h1MEtaPiAccSum[iTBin]->SetFillColor(kRed);
             // h1MEtaPiAccSum[iTBin]->SetFillStyle(3002);
             // h1MEtaPiAccSum[iTBin]->DrawCopy("HIST SAME");
             // lLatex->DrawLatexNDC(0.5,0.85,Form("%0.3f<t<%0.3f",tMin[iTBin],tMax[iTBin]));
-            // delete h1MEtaPiAccSSum[iTBin];
-            // delete h1MEtaPiAccDSum[iTBin];
-            // delete h1MEtaPiAccpDSum[iTBin];
-            // delete h1MEtaPiSigSum[iTBin];
-            // delete h1MEtaPiBkgSum[iTBin];
+            if (iTBin!=NTBin-1) {
+                delete h1MEtaPiAccSSum[iTBin];
+                delete h1MEtaPiAccDSum[iTBin];
+                delete h1MEtaPiAccpDSum[iTBin];
+                delete h1MEtaPiSigSum[iTBin];
+                delete h1MEtaPiBkgSum[iTBin];
+            }
             // delete hs;
         }
         gSystem->cd(mainDir);
         cWaves->SaveAs(Form("%s/plot_waveset_%s_%s.pdf",outDir.Data(),strWave[4].Data(),extraTag.Data()));
+
+        delete h1MEtaPiAccSSum[NTBin-1];
+        delete h1MEtaPiAccDSum[NTBin-1];
+        delete h1MEtaPiAccpDSum[NTBin-1];
+        delete h1MEtaPiSigSum[NTBin-1];
+        delete h1MEtaPiBkgSum[NTBin-1];
     }
     // cWaves->Clear();
     // cWaves->Divide(1,1);
@@ -697,8 +765,8 @@ void PlotFromFlatTree(){
 
     TCanvas *c_ft1 = new TCanvas("c_ft","c_ft",1600,1200);
     c_ft1->Divide(2,2);
-    TCanvas *c_Mpi0Eta = new TCanvas("c_Mpi0Eta", "c_Mpi0Eta",1600,300);
-    c_Mpi0Eta->Divide(5,1,0.0,0.0);
+    TCanvas *c_Mpi0Eta = new TCanvas("c_Mpi0Eta", "c_Mpi0Eta",1600,600);
+    c_Mpi0Eta->Divide(5,2,0.0,0.0);
     const Int_t NPlotSplitPol = 3;
     TCanvas *c_pol[NPlotSplitPol];
     for (Int_t i=0;i<NPlotSplitPol;i++) {
@@ -723,11 +791,15 @@ void PlotFromFlatTree(){
         Hist1DManager *h1ManagerMpieta = new Hist1DManager();
         Hist1DManager *h1ManagerCosThetaGJ = new Hist1DManager();
         Hist2DManager *h2ManagerMpi0etaPol = new Hist2DManager();
+        Hist1DManager *h1ManagerMpietaMCRecon = new Hist1DManager();
+        Hist1DManager *h1ManagerMpietaMCThrown = new Hist1DManager();
 
         // Phase1
         Hist1DManager *h1ManagerMpietaPhase1 = new Hist1DManager();
         Hist1DManager *h1ManagerCosThetaGJPhase1 = new Hist1DManager();
         Hist2DManager *h2ManagerMpietaPolPhase1 = new Hist2DManager();
+        Hist1DManager *h1ManagerMpietaMCReconPhase1 = new Hist1DManager();
+        Hist1DManager *h1ManagerMpietaMCThrownPhase1 = new Hist1DManager();
 
         cout << endl << endl << "=============================" << tBinString[iTBin] << "=============================" << endl;
         for (Int_t iPol=0;iPol<NPol;iPol++){
@@ -815,6 +887,8 @@ void PlotFromFlatTree(){
             leg->Draw();
 
             h1ManagerMpieta->Add(h1ManagerRecon->GetHist(0),h1ManagerRecon->GetBrVar(0),h1ManagerRecon->GetNBinsX(0),h1ManagerRecon->GetXMin(0),h1ManagerRecon->GetXMax(0));
+            h1ManagerMpietaMCRecon->Add(h1ManagerMCRecon->GetHist(0),h1ManagerMCRecon->GetBrVar(0),h1ManagerMCRecon->GetNBinsX(0),h1ManagerMCRecon->GetXMin(0),h1ManagerMCRecon->GetXMax(0));
+            h1ManagerMpietaMCThrown->Add(h1ManagerMCThrown->GetHist(0),h1ManagerMCThrown->GetBrVarThrown(0),h1ManagerMCThrown->GetNBinsX(0),h1ManagerMCThrown->GetXMin(0),h1ManagerMCThrown->GetXMax(0));
 
             AssignSelectedBranches(tFlatTreeReconPhase1, branchFlatTree, branchVar, NBranchFlatTree);
             Hist1DManager *h1ManagerReconPhase1 = new Hist1DManager();
@@ -822,6 +896,8 @@ void PlotFromFlatTree(){
             h1ManagerReconPhase1->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_ReconPhase1");
             h1ManagerReconPhase1->FillFromTree(tFlatTreeReconPhase1);
             h1ManagerMpietaPhase1->Add(h1ManagerReconPhase1->GetHist(0),h1ManagerReconPhase1->GetBrVar(0),h1ManagerReconPhase1->GetNBinsX(0),h1ManagerReconPhase1->GetXMin(0),h1ManagerReconPhase1->GetXMax(0));
+
+        
 
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             // h1ManagerMCRecon->GetHist(0)->SetLineColor(kRed);
@@ -860,7 +936,32 @@ void PlotFromFlatTree(){
         h1temp->Draw("HIST");
         
         h1Phase1temp->SetLineColor(kRed);
-        h1Phase1temp->DrawClone("HIST SAME");
+        h1Phase1temp->DrawCopy("HIST SAME");
+
+        TH1F *h1Acceptance = (TH1F*)h1ManagerMpietaMCRecon->GetHistSum()->Clone();
+        h1Acceptance->Divide(h1ManagerMpietaMCThrown->GetHistSum());
+        h1Acceptance->SetLineColor(kBlack);
+        h1Acceptance->SetLineStyle(2);
+        h1Acceptance->SetLineWidth(1);
+
+        // scale h1acceptance to match h1temp and draw right axis for h1acceptance
+
+        Double_t rightMax = 0.6;
+        h1Acceptance->Scale(Mpi0eta_max*1.2/rightMax);
+        h1Acceptance->GetYaxis()->SetRangeUser(0,Mpi0eta_max*1.2);
+        h1Acceptance->GetYaxis()->SetTitleOffset(1.2);
+        h1Acceptance->GetYaxis()->SetTitle("Acceptance");
+        h1Acceptance->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
+        // h1Acceptance->GetXaxis()->SetTitleSize(0.05);
+        // h1Acceptance->GetXaxis()->SetTitleOffset(1.2);
+        // h1Acceptance->GetXaxis()->SetLabelSize(0.04);
+        // h1Acceptance->GetYaxis()->SetTitleSize(0.05);
+        // h1Acceptance->GetYaxis()->SetLabelSize(0.04);
+        // h1Acceptance->GetYaxis()->SetLabelFont(42);
+        // h1Acceptance->GetYaxis()->SetTitleFont(42);
+        // h1Acceptance->GetYaxis()->SetNdivisions(505);
+        h1Acceptance->Smooth();
+        h1Acceptance->DrawCopy("L HIST SAME");
 
         if (iTBin==NTBin-1) {
             h1temp->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
@@ -869,6 +970,16 @@ void PlotFromFlatTree(){
             leg2->SetBorderSize(0);
             leg2->SetTextSize(0.05);
             leg2->Draw();
+            TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,h1Acceptance->GetMaximum(),510,"+L");
+            axis->SetLineColor(kBlack);
+            axis->SetLabelColor(kBlack);
+            axis->SetTitleColor(kBlack);
+            axis->SetLabelFont(42);
+            axis->SetTitleFont(42);
+            axis->SetLabelSize(0.04);
+            axis->SetTitleSize(0.05);
+            axis->SetTitleOffset(1.2);
+            axis->Draw();
         }
         else {
             h1temp->GetXaxis()->SetTitle("");

@@ -1,12 +1,12 @@
 const string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
-const Bool_t isSplitDataD = kTRUE;
-const Bool_t isSplitBkgndD = kTRUE;
-const Bool_t isSplitAccD = kFALSE;
+const Bool_t isSplitDataD = kFALSE;
+const Bool_t isSplitBkgndD = kFALSE;
+const Bool_t isSplitAccD = kTRUE;
 const Bool_t isSplitDataMC = kFALSE;
 const Bool_t isSplitBkgndMC = kFALSE;
-const Bool_t isSplitAccMC = kTRUE;
-const Bool_t isSplitGenMC = kTRUE;
+const Bool_t isSplitAccMC = kFALSE;
+const Bool_t isSplitGenMC = kFALSE;
 
 bool filterOmega(float omega, float Mpi0eta){
     // omega should be in degrees and mass in GeV
