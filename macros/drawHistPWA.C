@@ -68,6 +68,7 @@ const TString strFitFracWave = "D";
 const Bool_t isPlotA2CS = kFALSE;
 const TString etaPiPlotterOutLogName = "etapi_plotter_output.log";
 const Double_t lum = 132.4; // pb^-1
+const Double_t lumPhase1 = 125.0; // pb^-1
 const TString fileNameA2CSTheory = "/d/home/septian/EtaPi0Analysis/run/theory_pred/Bands_TMD_A2_cs.txt";
 const Float_t A2CSPhase1[5] = {0.2600,0.1173,0.0448,0.0521,0.0274};
 const Float_t A2CSPhase1StatErr[5] = {0.0324,0.0166,0.0084,0.0067,0.0047};
@@ -710,6 +711,8 @@ void PlotFromFlatTree(){
     vector<vector<TString>> rootFlatTreeMCThrown;
 
     vector<vector<TString>> rootFlatTreeReconPhase1;
+    vector<vector<TString>> rootFlatTreeMCReconPhase1;
+    vector<vector<TString>> rootFlatTreeMCThrownPhase1;
 
     // open flat trees
     for (auto polstrs: polString) {
@@ -719,6 +722,8 @@ void PlotFromFlatTree(){
         vector<TString> rootFlatTreeMCReconTemp;
         vector<TString> rootFlatTreeMCThrownTemp;
         vector<TString> rootFlatTreeReconPhase1Temp;
+        vector<TString> rootFlatTreeMCReconPhase1Temp;
+        vector<TString> rootFlatTreeMCThrownPhase1Temp;
        
         for (auto tbinstrs: tBinString) {
             TString dirTemp = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+extraTag+"/";
@@ -729,6 +734,8 @@ void PlotFromFlatTree(){
             rootFlatTreeMCThrownTemp.push_back(dirTemp+polstrs+"_t"+tbinstrs+"_"+mBinString+"_F"+dataTag+"_gen_data_flat.root");
             TString dirTempPhase1 = dirRootFlatTree+"t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_"+extraTagPhase1+"/";
             rootFlatTreeReconPhase1Temp.push_back(dirTempPhase1+polstrs+"_t"+tbinstrs+"_"+mBinString+"_"+dataTagPhase1+"_selected_"+extraTagPhase1+"_acc_flat.root");
+            rootFlatTreeMCReconPhase1Temp.push_back(dirTempPhase1+polstrs+"_t"+tbinstrs+"_"+mBinString+"_F"+dataTagPhase1+"_selected_"+extraTagPhase1+"_acc_flat.root");
+            rootFlatTreeMCThrownPhase1Temp.push_back(dirTempPhase1+polstrs+"_t"+tbinstrs+"_"+mBinString+"_F"+dataTagPhase1+"_gen_data_flat.root");
         }
         rootFlatTreeSignal.push_back(rootFlatTreeSignalTemp);
         rootFlatTreeBkgnd.push_back(rootFlatTreeBkgndTemp);
@@ -736,6 +743,8 @@ void PlotFromFlatTree(){
         rootFlatTreeMCRecon.push_back(rootFlatTreeMCReconTemp);
         rootFlatTreeMCThrown.push_back(rootFlatTreeMCThrownTemp);
         rootFlatTreeReconPhase1.push_back(rootFlatTreeReconPhase1Temp);
+        rootFlatTreeMCReconPhase1.push_back(rootFlatTreeMCReconPhase1Temp);
+        rootFlatTreeMCThrownPhase1.push_back(rootFlatTreeMCThrownPhase1Temp);
     }
     // open flat trees
     TFile *fFlatTreeSignal[NPol][NTBin];
@@ -744,6 +753,8 @@ void PlotFromFlatTree(){
     TFile *fFlatTreeMCRecon[NPol][NTBin];
     TFile *fFlatTreeMCThrown[NPol][NTBin];
     TFile *fFlatTreeReconPhase1[NPol][NTBin];
+    TFile *fFlatTreeMCReconPhase1[NPol][NTBin];
+    TFile *fFlatTreeMCThrownPhase1[NPol][NTBin];
     cout << endl << endl << "Opening flat trees:" << endl;
     for (Int_t iPol=0;iPol<NPol;iPol++){
         cout << endl << "=============================" << polString[iPol] << "=============================" << endl;
@@ -760,6 +771,10 @@ void PlotFromFlatTree(){
             fFlatTreeMCThrown[iPol][iTBin] = TFile::Open(rootFlatTreeMCThrown[iPol][iTBin], "READ");
             cout << rootFlatTreeReconPhase1[iPol][iTBin] << endl;
             fFlatTreeReconPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeReconPhase1[iPol][iTBin], "READ");
+            cout << rootFlatTreeMCReconPhase1[iPol][iTBin] << endl;
+            fFlatTreeMCReconPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeMCReconPhase1[iPol][iTBin], "READ");
+            cout << rootFlatTreeMCThrownPhase1[iPol][iTBin] << endl;
+            fFlatTreeMCThrownPhase1[iPol][iTBin] = TFile::Open(rootFlatTreeMCThrownPhase1[iPol][iTBin], "READ");
         }
     }
 
@@ -784,7 +799,8 @@ void PlotFromFlatTree(){
     TH1F *h1_Mpi0eta_phase1Sum;
 
     Double_t Mpi0eta_max = 0.0;
-    TLegend *leg2 = new TLegend(0.3,0.65,0.9,0.85);
+    Double_t Mpi0eta_max_corr = 0.0;
+    TLegend *leg2 = new TLegend(0.25,0.65,0.9,0.85);
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
         leg2->Clear();
         // manager for histograms for polarization sum
@@ -811,6 +827,8 @@ void PlotFromFlatTree(){
             TTree *tFlatTreeMCRecon = (TTree*)fFlatTreeMCRecon[iPol][iTBin]->Get("kin");
             TTree *tFlatTreeMCThrown = (TTree*)fFlatTreeMCThrown[iPol][iTBin]->Get("kin");
             TTree *tFlatTreeReconPhase1 = (TTree*)fFlatTreeReconPhase1[iPol][iTBin]->Get("kin");
+            TTree *tFlatTreeMCReconPhase1 = (TTree*)fFlatTreeMCReconPhase1[iPol][iTBin]->Get("kin");
+            TTree *tFlatTreeMCThrownPhase1 = (TTree*)fFlatTreeMCThrownPhase1[iPol][iTBin]->Get("kin");
 
             // get branches
             // AssignSelectedBranches(tFlatTreeSignal, branchFlatTree, branchVar);
@@ -897,7 +915,20 @@ void PlotFromFlatTree(){
             h1ManagerReconPhase1->FillFromTree(tFlatTreeReconPhase1);
             h1ManagerMpietaPhase1->Add(h1ManagerReconPhase1->GetHist(0),h1ManagerReconPhase1->GetBrVar(0),h1ManagerReconPhase1->GetNBinsX(0),h1ManagerReconPhase1->GetXMin(0),h1ManagerReconPhase1->GetXMax(0));
 
-        
+            AssignSelectedBranches(tFlatTreeMCReconPhase1, branchFlatTree, branchVar, NBranchFlatTree);
+            Hist1DManager *h1ManagerMCReconPhase1 = new Hist1DManager();
+            h1ManagerMCReconPhase1->Add(Mpi0eta,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCReconPhase1");
+            h1ManagerMCReconPhase1->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCReconPhase1");
+            h1ManagerMCReconPhase1->FillFromTree(tFlatTreeMCReconPhase1);
+            h1ManagerMpietaMCReconPhase1->Add(h1ManagerMCReconPhase1->GetHist(0),h1ManagerMCReconPhase1->GetBrVar(0),h1ManagerMCReconPhase1->GetNBinsX(0),h1ManagerMCReconPhase1->GetXMin(0),h1ManagerMCReconPhase1->GetXMax(0));
+
+            AssignSelectedBranches(tFlatTreeMCThrownPhase1, branchFlatTreeThrown, branchVarThrown, NBranchFlatTreeThrown);
+            Hist1DManager *h1ManagerMCThrownPhase1 = new Hist1DManager();
+            h1ManagerMCThrownPhase1->Add(Mpi0eta_thrown,"M_{#eta#pi^{0}} (GeV)",34,1.04,1.72,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrownPhase1");
+            h1ManagerMCThrownPhase1->Add(cosTheta_eta_gj_thrown,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_MCThrownPhase1");
+            h1ManagerMCThrownPhase1->FillFromTree(tFlatTreeMCThrownPhase1);
+            h1ManagerMpietaMCThrownPhase1->Add(h1ManagerMCThrownPhase1->GetHist(0),h1ManagerMCThrownPhase1->GetBrVarThrown(0),h1ManagerMCThrownPhase1->GetNBinsX(0),h1ManagerMCThrownPhase1->GetXMin(0),h1ManagerMCThrownPhase1->GetXMax(0));
+
 
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             // h1ManagerMCRecon->GetHist(0)->SetLineColor(kRed);
@@ -952,6 +983,14 @@ void PlotFromFlatTree(){
         h1Acceptance->GetYaxis()->SetTitleOffset(1.2);
         h1Acceptance->GetYaxis()->SetTitle("Acceptance");
         h1Acceptance->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
+
+        TH1F *h1AcceptancePhase1 = (TH1F*)h1ManagerMpietaMCReconPhase1->GetHistSum()->Clone();
+        h1AcceptancePhase1->Divide(h1ManagerMpietaMCThrownPhase1->GetHistSum());
+        h1AcceptancePhase1->SetLineColor(kRed);
+        h1AcceptancePhase1->SetLineStyle(2);
+        h1AcceptancePhase1->SetLineWidth(1);
+        h1AcceptancePhase1->Scale(Mpi0eta_max*1.2/rightMax);
+        
         // h1Acceptance->GetXaxis()->SetTitleSize(0.05);
         // h1Acceptance->GetXaxis()->SetTitleOffset(1.2);
         // h1Acceptance->GetXaxis()->SetLabelSize(0.04);
@@ -962,30 +1001,60 @@ void PlotFromFlatTree(){
         // h1Acceptance->GetYaxis()->SetNdivisions(505);
         h1Acceptance->Smooth();
         h1Acceptance->DrawCopy("L HIST SAME");
+        h1AcceptancePhase1->Smooth();
+        h1AcceptancePhase1->DrawCopy("L HIST SAME");
 
         if (iTBin==NTBin-1) {
             h1temp->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
             leg2->AddEntry(h1temp,"GlueX 2019-11","l");
             leg2->AddEntry(h1Phase1temp,"GlueX Phase-I","l");
             leg2->SetBorderSize(0);
-            leg2->SetTextSize(0.05);
+            leg2->SetTextSize(0.08);
             leg2->Draw();
-            TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,h1Acceptance->GetMaximum(),510,"+L");
-            axis->SetLineColor(kBlack);
-            axis->SetLabelColor(kBlack);
-            axis->SetTitleColor(kBlack);
-            axis->SetLabelFont(42);
-            axis->SetTitleFont(42);
-            axis->SetLabelSize(0.04);
-            axis->SetTitleSize(0.05);
-            axis->SetTitleOffset(1.2);
-            axis->Draw();
+            // TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,h1Acceptance->GetMaximum(),510,"+L");
+            // axis->SetLineColor(kBlack);
+            // axis->SetLabelColor(kBlack);
+            // axis->SetTitleColor(kBlack);
+            // axis->SetLabelFont(42);
+            // axis->SetTitleFont(42);
+            // axis->SetLabelSize(0.04);
+            // axis->SetTitleSize(0.05);
+            // axis->SetTitleOffset(1.2);
+            // axis->Draw();
         }
         else {
             h1temp->GetXaxis()->SetTitle("");
         }
         if (iTBin!=0) lLatex->DrawLatexNDC(0.5,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
         else lLatex->DrawLatexNDC(0.6,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+
+        c_Mpi0Eta->cd(iTBin+1+NTBin);
+        TH1F *h1Corr = (TH1F*)h1temp->Clone();
+        h1Corr->Divide(h1Corr,h1Acceptance,1.0,lum);
+        
+        if (iTBin==0) {
+            Mpi0eta_max_corr = h1Corr->GetMaximum();
+            h1Corr->GetYaxis()->SetTitle("Events / (0.02 GeV #times #epsilon #times 132.4 pb^{-1})");
+            h1Corr->GetYaxis()->SetTitleOffset(2.0);
+            h1Corr->GetYaxis()->SetTitleSize(0.05);
+            h1Corr->GetYaxis()->SetLabelSize(0.04);
+        }
+        h1Corr->GetYaxis()->SetRangeUser(0,Mpi0eta_max_corr*1.2);
+        h1Corr->Draw("HIST");
+
+        TH1F *h1Phase1Corr = (TH1F*)h1Phase1temp->Clone();
+        h1Phase1Corr->Divide(h1Phase1Corr,h1AcceptancePhase1,1.0,lumPhase1);
+        h1Phase1Corr->SetLineColor(kRed);
+        h1Phase1Corr->Draw("HIST SAME");
+
+        if (iTBin==NTBin-1) {
+            h1Corr->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
+            // leg2->Draw();
+        }
+        else {
+            h1Corr->GetXaxis()->SetTitle("");
+        }
+
     }
     // c_Mpi0Eta->cd();
     // h1_Mpi0eta_sum->Draw("HIST");
