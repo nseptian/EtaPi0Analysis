@@ -2,6 +2,7 @@
 const TString mainDir = "/d/home/septian/EtaPi0Analysis/run/mass_dependent_fits/";
 const TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const TString outDir = "/d/home/septian/EtaPi0Analysis/run/plots";
+const TString bootstrapDir = "/d/home/septian/EtaPi0Analysis/run/bootstrap/";
 // TString rootHistFitResult = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/etapi_plot_D2++_pD2++.root";
 // TString dirRootFlatTree = "/d/home/septian/EtaPi0Analysis/study_pwa/mass_dependent_fits/rootFiles/t010020_m104172_test/";
 const Int_t NPol = 4;
@@ -42,13 +43,13 @@ const TString branchFlatTreeThrown[NBranchFlatTreeThrown] = {"Ebeam_thrown","Mpi
 enum brVarThrown{Ebeam_thrown,Mpi0eta_thrown,cosTheta_eta_gj_thrown};
 Float_t branchVarThrown[NBranchFlatTreeThrown] = {1.0,1.0,1.0};
 
-const Bool_t isPlotFromFlatTrees = kTRUE;
+const Bool_t isPlotFromFlatTrees = kFALSE;
 const Bool_t isPlotVanHopeAngle = kFALSE;
-const Bool_t isPlotMPi0Eta = kTRUE;
+const Bool_t isPlotMPi0Eta = kFALSE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
-const Bool_t isPlotWaves = kTRUE;
+const Bool_t isPlotWaves = kFALSE;
 const TString etaPiPlotterOutName = "etapi_plot";
 const TString histBaseName[4] = {"EtaPi0_000_", "EtaPi0_045_", "EtaPi0_090_", "EtaPi0_135_"};
 const TString dataAmpTools[4] = {"dat","bkg","acc","gen"};
@@ -87,6 +88,7 @@ void PlotFromFlatTree();
 void etaPiPlotter(TString dirFit, TString fitName, TString outName, TString ampString, Bool_t isAccCorr, TString ampFitFracString, Bool_t isPlotAllVar, Bool_t isPlotGenHist);
 vector<Double_t> GetAccCorrYield(TString fileName);
 vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint);
+void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotter);
 
 // hist1DManager class for 1D histograms
 class Hist1DManager {
@@ -700,6 +702,8 @@ void drawHistPWA(){
         gSystem->cd(outDir);
         cA2CS->SaveAs(Form("plot_A2CS_%s.pdf",extraTag.Data()));
     }
+    
+    ReadFitsForBootstrap(100,kTRUE);
 }
 
 void PlotFromFlatTree(){
@@ -1184,6 +1188,37 @@ vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint){
     }
 
     return vData;
+}
+
+void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap){
+    cout << endl << "Reading fits for bootstrap" << endl;
+    vector<TString> vBootstrapDir;
+    for (auto const t: tBinString){
+        vBootstrapDir.push_back(Form("%st%s_%s/bootstrap_t%s/",bootstrapDir.Data(),t.Data(),extraTag.Data(),t.Data()));
+        cout << Form("%st%s_%s/bootstrap_t%s/",bootstrapDir.Data(),t.Data(),extraTag.Data(),t.Data()) << endl;
+    }
+
+    vector<vector<TString>> vvFitBootstrapDir;
+    for (Int_t iTBin=0;iTBin<vBootstrapDir.size();iTBin++){
+        vector<TString> vFitBootstrapDir;
+        for (Int_t iNSample=0;iNSample<NSample;iNSample++){
+            vFitBootstrapDir.push_back(Form("%sbootstrap_%d/",vBootstrapDir[iTBin].Data(),iNSample));
+        }
+        vvFitBootstrapDir.push_back(vFitBootstrapDir);
+    }
+
+    for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
+        for (Int_t iNSample=0;iNSample<NSample;iNSample++){
+            cout << "Reading " << vvFitBootstrapDir[iTBin][iNSample] << endl;
+            if (isRunEtaPiPlotterBootstrap) {
+                // run etapi_plotter
+                cout << endl << endl << "Running etapi_plotter..." << endl;
+                for (Int_t iStrWave=0;iStrWave<5;iStrWave++) {
+                    for (Int_t iTBin=0;iTBin<NTBin;iTBin++) etaPiPlotter(vvFitBootstrapDir[iTBin][iNSample],"etapi_result.fit","etapi_plot",Form("'%s'",strWave[iStrWave].Data()),kTRUE,strFitFracWave,kFALSE,kTRUE);
+                }
+            }
+        }
+    }
 }
 
 void gluex_style() {
