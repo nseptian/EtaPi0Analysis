@@ -659,6 +659,7 @@ void drawHistPWA(){
             gA2CS_theory->SetPointError(iPoint,0,0,vA2CS_theory[iPoint][2]-vA2CS_theory[iPoint][1],vA2CS_theory[iPoint][3]-vA2CS_theory[iPoint][2]);
         }
         TGraphErrors *gA2CS = new TGraphErrors();
+        TGraphErrors *gA2CSStatErr = new TGraphErrors();
         TGraphErrors *gA2CSPhase1StatErr = new TGraphErrors();
         TGraphErrors *gA2CSPhase1SystErr = new TGraphErrors();
         vector<Double_t> A2CSStatErrBootstrap={0.0,0.0,0.0,0.0,0.0};
@@ -672,9 +673,11 @@ void drawHistPWA(){
             Double_t dsigdtStatErr = 0.0;
             if (isA2CSBootstrap) dsigdtStatErr = A2CSStatErrBootstrap[iTBin]/(1000000*lum*dt*0.0565);
             else dsigdtStatErr = accCorrYield[1]/(1000000*lum*dt*0.0565);
-            Double_t toffset = 0.005;
+            Double_t toffset = 0.006;
             gA2CS->AddPoint((tMin[iTBin]+tMax[iTBin])/2+toffset,dsigdt);
-            gA2CS->SetPointError(iTBin,0,dsigdtStatErr);
+            // gA2CS->SetPointError(iTBin,0,dsigdtStatErr);
+            gA2CSStatErr->AddPoint((tMin[iTBin]+tMax[iTBin])/2+toffset,dsigdt);
+            gA2CSStatErr->SetPointError(iTBin,0.005,dsigdtStatErr);
             // cout << endl << (tMin[iTBin]+tMax[iTBin])/2 << " " << accCorrYield[0] << " +- " << accCorrYield[1] << endl;
             gA2CSPhase1StatErr->AddPoint((tMin[iTBin]+tMax[iTBin])/2-toffset,A2CSPhase1[iTBin]);
             gA2CSPhase1StatErr->SetPointError(iTBin,0.005,A2CSPhase1StatErr[iTBin]);
@@ -691,6 +694,7 @@ void drawHistPWA(){
         gA2CS_theory->GetXaxis()->SetTitleSize(0.05);
         gA2CS_theory->GetXaxis()->SetTitleOffset(1.2);
         gA2CS_theory->GetXaxis()->SetLabelSize(0.04);
+        gA2CS_theory->GetYaxis()->SetRangeUser(0.0,gA2CS->GetHistogram()->GetMaximum()*1.1);
         gA2CS_theory->GetYaxis()->SetTitle("#frac{d#sigma}{dt} #left(#frac{#mub}{GeV^{2}}#right)");
         gA2CS_theory->GetYaxis()->SetTitleSize(0.05);
         gA2CS_theory->GetYaxis()->SetTitleOffset(1.2);
@@ -702,6 +706,11 @@ void drawHistPWA(){
         gA2CS->SetMarkerColor(kRed);
         gA2CS->SetLineColor(kRed);
         gA2CS->Draw("PSAME");
+
+        gA2CSStatErr->SetLineWidth(0);
+        gA2CSStatErr->SetFillColorAlpha(kRed,0.5);
+        gA2CSStatErr->SetFillStyle(1001);
+        gA2CSStatErr->Draw("2SAME");
 
         gA2CSPhase1StatErr->SetLineWidth(0);
         gA2CSPhase1StatErr->SetFillColorAlpha(kBlack,0.5);
@@ -717,7 +726,7 @@ void drawHistPWA(){
         TLegend *legA2CS = new TLegend(0.6,0.5,0.8,0.85);
         legA2CS->AddEntry(gA2CS_theory,"#splitline{TMD predictions}{E_{#gamma}=8.5 GeV}","f");
         legA2CS->AddEntry(gA2CSPhase1SystErr,"#splitline{GlueX-I}{E_{#gamma}=[8.2,8.8] GeV}","pl");
-        legA2CS->AddEntry(gA2CS,"#splitline{GlueX-II}{E_{#gamma}=[8.0,8.6] GeV}","pl");
+        legA2CS->AddEntry(gA2CS,"#splitline{GlueX-II}{E_{#gamma}=[8.0,8.6] GeV}","p");
         legA2CS->AddEntry(gA2CSPhase1StatErr,"Statistical Unc.","f");
         legA2CS->SetTextSize(0.03);
         legA2CS->SetBorderSize(0);
@@ -1325,15 +1334,13 @@ vector<Double_t> ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBoo
             if (isReadFitFracWave) {
                 // read fit fractions
                 cout << endl << endl << "Reading fit fractions..." << endl;
-                for (Int_t iStrWave=0;iStrWave<5;iStrWave++) {
-                    TString fileName = vvFitBootstrapDir[iTBin][iNSample] + etaPiPlotterOutLogName;
-                    cout << "Reading " << fileName << endl;
-                    vector<Double_t> vAccCorrYield = GetAccCorrYield(fileName);
-                    h1BootstrapAccCorrYieldT[iTBin]->Fill(vAccCorrYield[0]);
-                    h1BootstrapAccCorrYieldRMST[iTBin]->SetBinContent(iNSample+1,h1BootstrapAccCorrYieldT[iTBin]->GetRMS());
-                    if (iNSample==NSample-1) {
-                        vA2CSStatErrBootstrap.push_back(vAccCorrYield[1]);
-                    }
+                TString fileName = vvFitBootstrapDir[iTBin][iNSample] + etaPiPlotterOutLogName;
+                cout << "Reading " << fileName << endl;
+                vector<Double_t> vAccCorrYield = GetAccCorrYield(fileName);
+                h1BootstrapAccCorrYieldT[iTBin]->Fill(vAccCorrYield[0]);
+                h1BootstrapAccCorrYieldRMST[iTBin]->SetBinContent(iNSample+1,h1BootstrapAccCorrYieldT[iTBin]->GetRMS());
+                if (iNSample==NSample-1) {
+                    vA2CSStatErrBootstrap.push_back(h1BootstrapAccCorrYieldT[iTBin]->GetRMS());
                 }
             }
         }
