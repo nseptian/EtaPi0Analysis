@@ -14,9 +14,9 @@ const Float_t tMin[NTBin] = {0.1,0.2,0.325,0.5,0.75};
 const Float_t tMax[NTBin] = {0.2,0.325,0.5,0.75,1.0};
 
 // const Int_t NTBin = 1;
-// const TString tBinString[NTBin] = {"075100"};
-// const Float_t tMin[NTBin] = {0.75};
-// const Float_t tMax[NTBin] = {1.0};
+// const TString tBinString[NTBin] = {"0200325"};
+// const Float_t tMin[NTBin] = {0.2};
+// const Float_t tMax[NTBin] = {0.325};
 
 // const Int_t NTBin = 5;
 // const TString tBinString[NTBin] = {"010020","020030","030040","040050","050060"};
@@ -33,10 +33,10 @@ const TString extraTagPhase1 = "nominal_wPhotonSyst";
 const TString dataTagPhase1 = "Phase1";
 
 // user config for plotting from flat trees
-const Int_t NBranchFlatTree = 9;
-const TString branchFlatTree[NBranchFlatTree] = {"Ebeam","Mpi0eta","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","cosTheta_eta_gj","Weight"};
-enum brVar{Ebeam,Mpi0eta,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,cosTheta_eta_gj,Weight};
-Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
+const Int_t NBranchFlatTree = 15;
+const TString branchFlatTree[NBranchFlatTree] = {"Ebeam","Mpi0eta","Meta","Mpi0","Mpi0p","vanHove_omega","vanHove_x","vanHove_y","pVH","cosTheta_eta_gj","Weight","mismatchPairMass_13","mismatchPairMass_24","mismatchPairMass_14","mismatchPairMass_23"};
+enum brVar{Ebeam,Mpi0eta,Meta,Mpi0,Mpi0p,vanHove_omega,vanHove_x,vanHove_y,pVH,cosTheta_eta_gj,Weight,mismatchPairMass_13,mismatchPairMass_24,mismatchPairMass_14,mismatchPairMass_23};
+Float_t branchVar[NBranchFlatTree] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
 
 const Int_t NBranchFlatTreeThrown = 3;
 const TString branchFlatTreeThrown[NBranchFlatTreeThrown] = {"Ebeam_thrown","Mpi0eta_thrown","cosTheta_eta_gj_thrown"};
@@ -45,7 +45,7 @@ Float_t branchVarThrown[NBranchFlatTreeThrown] = {1.0,1.0,1.0};
 
 const Bool_t isPlotFromFlatTrees = kFALSE;
 const Bool_t isPlotVanHopeAngle = kFALSE;
-const Bool_t isPlotMPi0Eta = kFALSE;
+// const Bool_t isPlotMPi0Eta = kTRUE;
 
 // user config for etapi_plotter
 const Bool_t isRunEtaPiPlotter = kFALSE;
@@ -74,6 +74,7 @@ const TString fileNameA2CSTheory = "/d/home/septian/EtaPi0Analysis/run/theory_pr
 const Float_t A2CSPhase1[5] = {0.2600,0.1173,0.0448,0.0521,0.0274};
 const Float_t A2CSPhase1StatErr[5] = {0.0324,0.0166,0.0084,0.0067,0.0047};
 const Float_t A2CSPhase1SystErr[5] = {0.0561,0.0285,0.0087,0.0074,0.0030};
+const Float_t A2AccCorrYieldCenter[5] = {252491,99484,74132,77840,71284};
 
 // waves=["S0+-_S0++",
 //        "D1--_D0+-_D1+-_D0++_D1++_D2++",
@@ -88,7 +89,7 @@ void PlotFromFlatTree();
 void etaPiPlotter(TString dirFit, TString fitName, TString outName, TString ampString, Bool_t isAccCorr, TString ampFitFracString, Bool_t isPlotAllVar, Bool_t isPlotGenHist);
 vector<Double_t> GetAccCorrYield(TString fileName);
 vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint);
-void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotter);
+void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotter, Bool_t isReadFitFracWave);
 
 // hist1DManager class for 1D histograms
 class Hist1DManager {
@@ -355,6 +356,14 @@ void Hist2DManager::Add(TH2F* h2, brVar brVarX, brVar brVarY, Int_t nBinsX, Floa
 }
 
 void Hist2DManager::FillFromTree(TTree *tTree) {
+    if (vBrVarX.size()==0) {
+        cout << "ERROR: No branch variable is added!" << endl;
+        return;
+    }
+    if (vBrVarX.size()>0) {
+        cout << "Filling histograms from flat tree with branch variable(s):" << endl;
+        for (Int_t iBr=0;iBr<vBrVarX.size();iBr++) cout << vBrNameX[iBr] << "," << vBrNameY[iBr] << endl;
+    }
     for (Int_t iHist=0;iHist<NHist;iHist++) {
         for (Int_t iEvent=0;iEvent<tTree->GetEntries();iEvent++) {
             tTree->GetEntry(iEvent);
@@ -468,6 +477,7 @@ void drawHistPWA(){
         TH1F *h1MEtaPiBkgSum[NTBin];
         THStack *hs[NTBin+1];
         TLatex *lLatex = new TLatex();
+        lLatex->SetTextSize(0.08);
         for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
             TH1F *h1MEtaPiAccS[NPol];
             TH1F *h1MEtaPiAccD[NPol];
@@ -511,7 +521,11 @@ void drawHistPWA(){
 
             h1MEtaPiSigSum[iTBin]->Add(h1MEtaPiBkgSum[iTBin],-1.0);
             h1MEtaPiSigSum[iTBin]->GetXaxis()->SetRangeUser(1.04,1.65);
-            if (iTBin==0) yMaxx = h1MEtaPiSigSum[iTBin]->GetMaximum()*1.2;;
+            h1MEtaPiSigSum[iTBin]->GetXaxis()->SetLabelSize(0.08);
+            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetLabelSize(0.08);
+            h1MEtaPiSigSum[iTBin]->GetXaxis()->SetTitleSize(0.1);
+            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitleSize(0.1);
+            if (iTBin==0) yMaxx = h1MEtaPiSigSum[iTBin]->GetMaximum()*1.2;
             h1MEtaPiSigSum[iTBin]->GetYaxis()->SetRangeUser(50,yMaxx);
             if (iTBin==NTBin-1) h1MEtaPiSigSum[iTBin]->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
             else h1MEtaPiSigSum[iTBin]->GetXaxis()->SetTitle("");
@@ -533,16 +547,17 @@ void drawHistPWA(){
             if (iTBin!=0) lLatex->DrawLatexNDC(0.3,0.9,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
             else lLatex->DrawLatexNDC(0.45,0.9,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
             if (iTBin==NTBin-1) {
-                leg[0] = new TLegend(0.3,0.7,0.9,0.8);
+                leg[0] = new TLegend(0.3,0.6,0.9,0.8);
                 leg[0]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
                 leg[0]->AddEntry(h1MEtaPiAccSSum[iTBin],"S-waves","f");
                 leg[0]->SetBorderSize(0);
-                leg[0]->SetTextSize(0.05);
+                leg[0]->SetTextSize(0.08);
                 leg[0]->Draw();
             }
             gPad->RedrawAxis();
 
             cWaves->cd(iTBin+1+NTBin);
+            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitle("");
             h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
             h1MEtaPiAccDSum[iTBin]->SetLineColor(kRed);
             h1MEtaPiAccDSum[iTBin]->SetLineWidth(1);
@@ -554,11 +569,13 @@ void drawHistPWA(){
                 // leg[1]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
                 leg[1]->AddEntry(h1MEtaPiAccDSum[iTBin],"a_{2}(1320)","f");
                 leg[1]->SetBorderSize(0);
-                leg[1]->SetTextSize(0.05);
+                leg[1]->SetTextSize(0.08);
                 leg[1]->Draw();
             }
 
             cWaves->cd(iTBin+1+2*NTBin);
+            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetTitle("");
+            h1MEtaPiSigSum[iTBin]->GetYaxis()->SetLabelSize(0.06);
             h1MEtaPiSigSum[iTBin]->DrawCopy("HIST");
             h1MEtaPiAccpDSum[iTBin]->SetLineColor(11);
             h1MEtaPiAccpDSum[iTBin]->SetLineWidth(1);
@@ -570,7 +587,7 @@ void drawHistPWA(){
                 // leg[2]->AddEntry(h1MEtaPiSigSum[iTBin],"Data","l");
                 leg[2]->AddEntry(h1MEtaPiAccpDSum[iTBin],"a_{2}(1700)","f");
                 leg[2]->SetBorderSize(0);
-                leg[2]->SetTextSize(0.05);
+                leg[2]->SetTextSize(0.062);
                 leg[2]->Draw();
             }
             
@@ -692,7 +709,7 @@ void drawHistPWA(){
 
         TLegend *legA2CS = new TLegend(0.6,0.5,0.8,0.85);
         legA2CS->AddEntry(gA2CS_theory,"#splitline{TMD predictions}{E_{#gamma}=8.5 GeV}","f");
-        legA2CS->AddEntry(gA2CS,"#splitline{GlueX 2019-11}{E_{#gamma}=[8.0,8.6] GeV}","pl");
+        legA2CS->AddEntry(gA2CS,"#splitline{GlueX 2020}{E_{#gamma}=[8.0,8.6] GeV}","pl");
         legA2CS->AddEntry(gA2CSPhase1SystErr,"#splitline{GlueX Phase-I}{E_{#gamma}=[8.2,8.8] GeV}","pl");
         legA2CS->AddEntry(gA2CSPhase1StatErr,"Statistical Unc.","f");
         legA2CS->SetTextSize(0.03);
@@ -703,7 +720,7 @@ void drawHistPWA(){
         cA2CS->SaveAs(Form("plot_A2CS_%s.pdf",extraTag.Data()));
     }
     
-    ReadFitsForBootstrap(100,kTRUE);
+    ReadFitsForBootstrap(100,kFALSE,kTRUE);
 }
 
 void PlotFromFlatTree(){
@@ -782,10 +799,10 @@ void PlotFromFlatTree(){
         }
     }
 
-    TCanvas *c_ft1 = new TCanvas("c_ft","c_ft",1600,1200);
-    c_ft1->Divide(2,2);
     TCanvas *c_Mpi0Eta = new TCanvas("c_Mpi0Eta", "c_Mpi0Eta",1600,600);
     c_Mpi0Eta->Divide(5,2,0.0,0.0);
+    TCanvas *c_mismatchMass = new TCanvas("c_mismatchMass", "c_mismatchMass",1200,600);
+    c_mismatchMass->Divide(2,1);
     const Int_t NPlotSplitPol = 3;
     TCanvas *c_pol[NPlotSplitPol];
     for (Int_t i=0;i<NPlotSplitPol;i++) {
@@ -801,10 +818,13 @@ void PlotFromFlatTree(){
 
     TH1F *h1_Mpi0eta_sum;
     TH1F *h1_Mpi0eta_phase1Sum;
+    Hist2DManager *h2ManagerM13M24 = new Hist2DManager();
+    Hist2DManager *h2ManagerM23M14 = new Hist2DManager();
+    Hist2DManager *h2ManagerMEtaMPi0 = new Hist2DManager();
 
     Double_t Mpi0eta_max = 0.0;
     Double_t Mpi0eta_max_corr = 0.0;
-    TLegend *leg2 = new TLegend(0.25,0.65,0.9,0.85);
+    TLegend *leg2 = new TLegend(0.20,0.65,0.85,0.85);
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
         leg2->Clear();
         // manager for histograms for polarization sum
@@ -844,8 +864,19 @@ void PlotFromFlatTree(){
             h1ManagerRecon->Add(cosTheta_eta_gj,"cos#theta_{GJ}",50,-1.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->Add(Ebeam,"E_{beam} (GeV)",50,7.8,9.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
             h1ManagerRecon->FillFromTree(tFlatTreeRecon);
+
             // h1ManagerRecon->Print(0,Form("HistManagerPlot_Mpi0Eta_Recon_%s_%s_%s_%s.pdf",polString[iPol].Data(),tBinString[iTBin].Data(),mBinString.Data(),extraTag.Data()),"P",1600,1600);
             // h1ManagerCosThetaGJ->Add(h1ManagerRecon->GetHist(1),h1ManagerRecon->GetBrVar(1),h1ManagerRecon->GetNBinsX(1),h1ManagerRecon->GetXMin(1),h1ManagerRecon->GetXMax(1));
+
+            Hist2DManager *h2ManagerRecon = new Hist2DManager();
+            h2ManagerRecon->Add(mismatchPairMass_13,mismatchPairMass_24,"m_{#gamma_{1}#gamma_{3}} (GeV)","m_{#gamma_{2}#gamma_{4}} (GeV)",50,0.0,1.0,50,0.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
+            h2ManagerRecon->Add(mismatchPairMass_23,mismatchPairMass_14,"m_{#gamma_{2}#gamma_{3}} (GeV)","m_{#gamma_{1}#gamma_{4}} (GeV)",50,0.0,1.0,50,0.0,1.0,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
+            h2ManagerRecon->Add(Mpi0,Meta,"M_{#pi^{0}} (GeV)","M_{#eta} (GeV)",50,0.09,0.18,50,0.4,0.7,tBinString[iTBin]+"_"+polString[iPol]+"_Recon");
+            h2ManagerRecon->FillFromTree(tFlatTreeRecon);
+
+            h2ManagerM13M24->Add(h2ManagerRecon->GetHist(0),h2ManagerRecon->GetBrVarX(0),h2ManagerRecon->GetBrVarY(0),h2ManagerRecon->GetNBinsX(0),h2ManagerRecon->GetXMin(0),h2ManagerRecon->GetXMax(0),h2ManagerRecon->GetNBinsY(0),h2ManagerRecon->GetYMin(0),h2ManagerRecon->GetYMax(0));
+            h2ManagerM23M14->Add(h2ManagerRecon->GetHist(1),h2ManagerRecon->GetBrVarX(1),h2ManagerRecon->GetBrVarY(1),h2ManagerRecon->GetNBinsX(1),h2ManagerRecon->GetXMin(1),h2ManagerRecon->GetXMax(1),h2ManagerRecon->GetNBinsY(1),h2ManagerRecon->GetYMin(1),h2ManagerRecon->GetYMax(1));
+            h2ManagerMEtaMPi0->Add(h2ManagerRecon->GetHist(2),h2ManagerRecon->GetBrVarX(2),h2ManagerRecon->GetBrVarY(2),h2ManagerRecon->GetNBinsX(2),h2ManagerRecon->GetXMin(2),h2ManagerRecon->GetXMax(2),h2ManagerRecon->GetNBinsY(2),h2ManagerRecon->GetYMin(2),h2ManagerRecon->GetYMax(2));
 
             AssignSelectedBranches(tFlatTreeMCRecon, branchFlatTree, branchVar, NBranchFlatTree);
             Hist1DManager *h1ManagerMCRecon = new Hist1DManager();
@@ -871,7 +902,7 @@ void PlotFromFlatTree(){
             h1ManagerMCThrown->GetHist(0)->Draw("HIST SAME");
             h1ManagerRecon->GetHist(0)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(0)->GetMaximum()*1.2);
             lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
-            leg->AddEntry(h1ManagerRecon->GetHist(0),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerRecon->GetHist(0),"GlueX 2020","l");
             leg->AddEntry(h1ManagerMCRecon->GetHist(0),"MC Recon","l");
             leg->AddEntry(h1ManagerMCThrown->GetHist(0),"MC Thrown","l");
             leg->Draw();
@@ -887,7 +918,7 @@ void PlotFromFlatTree(){
             h1ManagerRecon->GetHist(1)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(1)->GetMaximum()*1.2);
             lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
             leg->Clear();
-            leg->AddEntry(h1ManagerRecon->GetHist(1),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerRecon->GetHist(1),"GlueX 2020","l");
             leg->AddEntry(h1ManagerMCRecon->GetHist(1),"MC Recon","l");
             leg->AddEntry(h1ManagerMCThrown->GetHist(1),"MC Thrown","l");
             leg->Draw();
@@ -903,7 +934,7 @@ void PlotFromFlatTree(){
             h1ManagerRecon->GetHist(2)->GetYaxis()->SetRangeUser(0,h1ManagerMCThrown->GetHist(2)->GetMaximum()*1.2);
             lLatex->DrawLatexNDC(0.75,0.9,Form("%s, t = %s",polString[iPol].Data(),tBinString[iTBin].Data()));
             leg->Clear();
-            leg->AddEntry(h1ManagerRecon->GetHist(2),"GlueX 2019-11","l");
+            leg->AddEntry(h1ManagerRecon->GetHist(2),"GlueX 2020","l");
             leg->AddEntry(h1ManagerMCRecon->GetHist(2),"MC Recon","l");
             leg->AddEntry(h1ManagerMCThrown->GetHist(2),"MC Thrown","l");
             leg->Draw();
@@ -968,6 +999,12 @@ void PlotFromFlatTree(){
         TH1F *h1Phase1temp = (TH1F*)h1ManagerMpietaPhase1->GetHistSum()->Clone();
         h1temp->GetYaxis()->SetRangeUser(0,Mpi0eta_max*1.2);
         h1temp->GetYaxis()->SetTitleOffset(1.2);
+        h1temp->GetXaxis()->SetTitleSize(0.08);
+        h1temp->GetXaxis()->SetTitleOffset(1.2);
+        h1temp->GetXaxis()->SetLabelSize(0.06);
+        h1temp->GetYaxis()->SetTitleSize(0.08);
+        h1temp->GetYaxis()->SetLabelSize(0.06);
+
         h1temp->Draw("HIST");
         
         h1Phase1temp->SetLineColor(kRed);
@@ -981,7 +1018,7 @@ void PlotFromFlatTree(){
 
         // scale h1acceptance to match h1temp and draw right axis for h1acceptance
 
-        Double_t rightMax = 0.6;
+        Double_t rightMax = 0.55;
         h1Acceptance->Scale(Mpi0eta_max*1.2/rightMax);
         h1Acceptance->GetYaxis()->SetRangeUser(0,Mpi0eta_max*1.2);
         h1Acceptance->GetYaxis()->SetTitleOffset(1.2);
@@ -1008,28 +1045,34 @@ void PlotFromFlatTree(){
         h1AcceptancePhase1->Smooth();
         h1AcceptancePhase1->DrawCopy("L HIST SAME");
 
+        // draw right axis for h1acceptance
+        TGaxis *axis = new TGaxis(1.72,-100,1.72,Mpi0eta_max*1.2,0,rightMax,510,"+L");
+        axis->SetLineColor(kBlack);
+        axis->SetLabelColor(kBlack);
+        axis->SetLabelSize(0.06);
+        axis->SetLabelOffset(0.01);
+        axis->SetTitle("#epsilon (%)");
+        axis->SetTitleSize(0.08);
+        axis->SetTitleOffset(0.8);
+        axis->Draw();
+
         if (iTBin==NTBin-1) {
             h1temp->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
-            leg2->AddEntry(h1temp,"GlueX 2019-11","l");
-            leg2->AddEntry(h1Phase1temp,"GlueX Phase-I","l");
+            leg2->AddEntry(h1Phase1temp,"GlueX-I","l");
+            leg2->AddEntry(h1temp,"GlueX-II","l");
             leg2->SetBorderSize(0);
             leg2->SetTextSize(0.08);
             leg2->Draw();
-            // TGaxis *axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,h1Acceptance->GetMaximum(),510,"+L");
-            // axis->SetLineColor(kBlack);
-            // axis->SetLabelColor(kBlack);
-            // axis->SetTitleColor(kBlack);
-            // axis->SetLabelFont(42);
-            // axis->SetTitleFont(42);
-            // axis->SetLabelSize(0.04);
-            // axis->SetTitleSize(0.05);
-            // axis->SetTitleOffset(1.2);
-            // axis->Draw();
+            gPad->SetRightMargin(0.15);
+            gPad->Update();
         }
         else {
             h1temp->GetXaxis()->SetTitle("");
         }
-        if (iTBin!=0) lLatex->DrawLatexNDC(0.5,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+        if (iTBin!=0) {
+                if (iTBin==4) lLatex->DrawLatexNDC(0.45,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+                else lLatex->DrawLatexNDC(0.5,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
+            }
         else lLatex->DrawLatexNDC(0.6,0.95,Form("%0.3f < -t < %0.3f",tMin[iTBin],tMax[iTBin]));
 
         c_Mpi0Eta->cd(iTBin+1+NTBin);
@@ -1038,12 +1081,13 @@ void PlotFromFlatTree(){
         
         if (iTBin==0) {
             Mpi0eta_max_corr = h1Corr->GetMaximum();
-            h1Corr->GetYaxis()->SetTitle("Events / (0.02 GeV #times #epsilon #times 132.4 pb^{-1})");
-            h1Corr->GetYaxis()->SetTitleOffset(2.0);
-            h1Corr->GetYaxis()->SetTitleSize(0.05);
-            h1Corr->GetYaxis()->SetLabelSize(0.04);
+            h1Corr->GetYaxis()->SetTitle("Events / (0.02 GeV #times #epsilon #times #it{L} pb^{-1})");
+            h1Corr->GetYaxis()->SetTitleOffset(1.5);
+            h1Corr->GetYaxis()->SetTitleSize(0.06);
+            h1Corr->GetYaxis()->SetLabelSize(0.05);
         }
         h1Corr->GetYaxis()->SetRangeUser(0,Mpi0eta_max_corr*1.2);
+        h1Corr->GetXaxis()->SetLabelSize(0.06);
         h1Corr->Draw("HIST");
 
         TH1F *h1Phase1Corr = (TH1F*)h1Phase1temp->Clone();
@@ -1052,20 +1096,62 @@ void PlotFromFlatTree(){
         h1Phase1Corr->Draw("HIST SAME");
 
         if (iTBin==NTBin-1) {
+            h1Corr->GetXaxis()->SetTitleSize(0.08);
             h1Corr->GetXaxis()->SetTitle("M_{#eta#pi^{0}} (GeV)");
             // leg2->Draw();
+            gPad->SetRightMargin(0.15);
+            gPad->Update();
         }
         else {
             h1Corr->GetXaxis()->SetTitle("");
         }
 
     }
+    
     // c_Mpi0Eta->cd();
     // h1_Mpi0eta_sum->Draw("HIST");
     // h1_Mpi0eta_phase1Sum->SetLineColor(kRed);
     // h1_Mpi0eta_phase1Sum->Draw("HIST SAME");
     // c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SumT_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTag.Data(),extraTag.Data()));
-    c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SumPol_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTagPhase1.Data(),extraTagPhase1.Data()));
+    c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_SumPol_%s_%s_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTagPhase1.Data(),extraTagPhase1.Data(),dataTag.Data(),extraTag.Data()));
+    
+    cout << "Number of histogram in h2ManagerMEtaMPi0: " << h2ManagerMEtaMPi0->GetSize() << endl;
+    for (Int_t iHist=0;iHist<h2ManagerMEtaMPi0->GetSize();iHist++) {
+        cout << "iHist = " << iHist << endl;
+        cout << "h2ManagerMEtaMPi0->GetHist(iHist)->GetName() = " << h2ManagerMEtaMPi0->GetHist(iHist)->GetName() << endl;
+        cout << "h2ManagerMEtaMPi0->GetHist(iHist)->GetEntries() = " << h2ManagerMEtaMPi0->GetHist(iHist)->GetEntries() << endl;
+    }
+    cout << "Total entries in h2ManagerMEtaMPi0: " << h2ManagerMEtaMPi0->GetHistSum()->GetEntries() << endl;
+
+    c_Mpi0Eta->Clear();
+    c_Mpi0Eta->Divide(1,1);
+    c_Mpi0Eta->SetWindowSize(400,800);
+    c_Mpi0Eta->cd(1);
+    TH2F *h2MEtaMpi0Draw = (TH2F*)h2ManagerMEtaMPi0->GetHistSum()->Clone();
+    //set up the color z axis palette size and offset
+    h2MEtaMpi0Draw->Draw("COLZ");
+
+    c_Mpi0Eta->SaveAs(Form("%s/plot_Mpi0Eta_Recon_MEtaMPi0_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTag.Data(),extraTag.Data()));
+
+    // cout << "Number of histogram in h2ManagerM13M24: " << h2ManagerM13M24->GetSize() << endl;
+    // for (Int_t iHist=0;iHist<h2ManagerM13M24->GetSize();iHist++) {
+    //     cout << "iHist = " << iHist << endl;
+    //     cout << "h2ManagerM13M24->GetHist(iHist)->GetName() = " << h2ManagerM13M24->GetHist(iHist)->GetName() << endl;
+    //     cout << "h2ManagerM13M24->GetHist(iHist)->GetEntries() = " << h2ManagerM13M24->GetHist(iHist)->GetEntries() << endl;
+    // }
+    // cout << "Number of histogram in h2ManagerM23M14: " << h2ManagerM23M14->GetSize() << endl;
+    // for (Int_t iHist=0;iHist<h2ManagerM23M14->GetSize();iHist++) {
+    //     cout << "iHist = " << iHist << endl;
+    //     cout << "h2ManagerM23M14->GetHist(iHist)->GetName() = " << h2ManagerM23M14->GetHist(iHist)->GetName() << endl;
+    //     cout << "h2ManagerM23M14->GetHist(iHist)->GetEntries() = " << h2ManagerM23M14->GetHist(iHist)->GetEntries() << endl;
+    // }
+
+    // c_mismatchMass->cd(1);
+    // h2ManagerM13M24->GetHistSum()->Draw("COLZ");
+    // c_mismatchMass->cd(2);
+    // h2ManagerM23M14->GetHistSum()->Draw("COLZ");
+
+    // c_mismatchMass->SaveAs(Form("%s/plot_mismatchMass_Recon_%s_%s_%s.pdf",outDir.Data(),mBinString.Data(),dataTag.Data(),extraTag.Data()));
 }
 
 void AssignSelectedBranches(TTree *tTree,const TString branchName[],Float_t branchVar[],Int_t NBrFlatTree){
@@ -1190,7 +1276,7 @@ vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint){
     return vData;
 }
 
-void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap){
+void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool_t isReadFitFracWave){
     cout << endl << "Reading fits for bootstrap" << endl;
     vector<TString> vBootstrapDir;
     for (auto const t: tBinString){
@@ -1207,6 +1293,19 @@ void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap){
         vvFitBootstrapDir.push_back(vFitBootstrapDir);
     }
 
+    TH1F *h1BootstrapAccCorrYieldT[5];
+    TH1F *h1BootstrapAccCorrYieldRMST[5];
+    if (isReadFitFracWave){
+        for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
+            h1BootstrapAccCorrYieldT[iTBin] = new TH1F(Form("h1BootstrapAccCorrYieldT_%s",tBinString[iTBin].Data()),Form("Bootstrapped acc. corr. yield, t = %s",tBinString[iTBin].Data()),40,A2AccCorrYieldCenter[iTBin]-0.7*A2AccCorrYieldCenter[iTBin],A2AccCorrYieldCenter[iTBin]+1.3*A2AccCorrYieldCenter[iTBin]);
+            h1BootstrapAccCorrYieldRMST[iTBin] = new TH1F(Form("h1BootstrapAccCorrYieldRMST_%s",tBinString[iTBin].Data()),Form("Bootstrapped acc. corr. yield RMS, t = %s",tBinString[iTBin].Data()),100,-0.5,100.5);
+        }
+    }
+    TCanvas *c_a2AccCorrYield = new TCanvas("c_a2AccCorrYield","c_a2AccCorrYield",1200,800);
+    c_a2AccCorrYield->Divide(3,2,0.00001,0.00001);
+    TCanvas *c_a2AccCorrYieldRMS = new TCanvas("c_a2AccCorrYieldRMS","c_a2AccCorrYieldRMS",1200,800);
+    c_a2AccCorrYieldRMS->Divide(3,2,0.00001,0.00001);
+    TLatex *lLatex = new TLatex();
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
         for (Int_t iNSample=0;iNSample<NSample;iNSample++){
             cout << "Reading " << vvFitBootstrapDir[iTBin][iNSample] << endl;
@@ -1217,8 +1316,41 @@ void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap){
                     for (Int_t iTBin=0;iTBin<NTBin;iTBin++) etaPiPlotter(vvFitBootstrapDir[iTBin][iNSample],"etapi_result.fit","etapi_plot",Form("'%s'",strWave[iStrWave].Data()),kTRUE,strFitFracWave,kFALSE,kTRUE);
                 }
             }
+            if (isReadFitFracWave) {
+                // read fit fractions
+                cout << endl << endl << "Reading fit fractions..." << endl;
+                for (Int_t iStrWave=0;iStrWave<5;iStrWave++) {
+                    TString fileName = vvFitBootstrapDir[iTBin][iNSample] + etaPiPlotterOutLogName;
+                    cout << "Reading " << fileName << endl;
+                    vector<Double_t> vAccCorrYield = GetAccCorrYield(fileName);
+                    h1BootstrapAccCorrYieldT[iTBin]->Fill(vAccCorrYield[0]);
+                    h1BootstrapAccCorrYieldRMST[iTBin]->SetBinContent(iNSample+1,h1BootstrapAccCorrYieldT[iTBin]->GetRMS());
+                }
+            }
         }
+        c_a2AccCorrYield->cd(iTBin+1);
+        h1BootstrapAccCorrYieldT[iTBin]->GetXaxis()->SetTitle("N_{a_{2(1320)}}/#epsilon");
+        h1BootstrapAccCorrYieldT[iTBin]->GetYaxis()->SetTitle("Counts");
+        h1BootstrapAccCorrYieldT[iTBin]->Draw();
+        lLatex->SetTextSize(0.04);
+        lLatex->DrawLatexNDC(0.65,0.9,Form("%0.3f<t<%0.3f",tMin[iTBin],tMax[iTBin]));
+        // draw center line
+        TLine *lCenter = new TLine(A2AccCorrYieldCenter[iTBin],0,A2AccCorrYieldCenter[iTBin],1.05*h1BootstrapAccCorrYieldT[iTBin]->GetMaximum());
+        lCenter->SetLineColor(kRed);
+        lCenter->SetLineStyle(2);
+        lCenter->Draw();
+
+        c_a2AccCorrYieldRMS->cd(iTBin+1);
+        h1BootstrapAccCorrYieldRMST[iTBin]->GetXaxis()->SetTitle("Bootstrap sample");
+        h1BootstrapAccCorrYieldRMST[iTBin]->GetYaxis()->SetTitle("#sigma (RMS)");
+        h1BootstrapAccCorrYieldRMST[iTBin]->GetYaxis()->SetRangeUser(0,1.1*h1BootstrapAccCorrYieldRMST[iTBin]->GetMaximum());
+        h1BootstrapAccCorrYieldRMST[iTBin]->GetYaxis()->SetTitleOffset(1.5);
+        h1BootstrapAccCorrYieldRMST[iTBin]->Draw();
+        lLatex->SetTextSize(0.04);
+        lLatex->DrawLatexNDC(0.65,0.9,Form("%0.3f<t<%0.3f",tMin[iTBin],tMax[iTBin]));
     }
+    c_a2AccCorrYield->SaveAs(Form("%s/plot_A2AccCorrYieldT_%s_%s.pdf",outDir.Data(),dataTag.Data(),extraTag.Data()));
+    c_a2AccCorrYieldRMS->SaveAs(Form("%s/plot_A2AccCorrYieldRMS_%s_%s.pdf",outDir.Data(),dataTag.Data(),extraTag.Data()));
 }
 
 void gluex_style() {
@@ -1247,11 +1379,11 @@ void gluex_style() {
 
 	// axis labels and settings
     gluex_style->SetStripDecimals(0);
- 	gluex_style->SetLabelSize(0.06,"xyz"); // size of axis value font
- 	gluex_style->SetTitleSize(0.08,"xyz"); // size of axis title font
+ 	gluex_style->SetLabelSize(0.04,"xyz"); // size of axis value font
+ 	gluex_style->SetTitleSize(0.06,"xyz"); // size of axis title font
  	gluex_style->SetTitleFont(42,"xyz"); // font option
  	gluex_style->SetLabelFont(42,"xyz"); 
- 	gluex_style->SetTitleOffset(1.5,"y"); 
+ 	gluex_style->SetTitleOffset(1.2,"y"); 
  	gluex_style->SetLabelOffset(0.01,"xyz");   // stop collisions of "0"s at the origin
  	
 	// histogram settings
@@ -1263,6 +1395,6 @@ void gluex_style() {
 
 	// gluex_style->SetHistFillColor(920);   // grey
     gluex_style->SetFillStyle(0);
-	gluex_style->SetPalette(kRainBow); // kViridis is perceptually uniform and colorblind friendly
+	// gluex_style->SetPalette(kRainBow); // kViridis is perceptually uniform and colorblind friendly
 	gluex_style->cd();
 }
