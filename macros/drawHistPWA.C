@@ -66,7 +66,9 @@ const TString strWave[5] = {"S0+-_S0++",
 // const TString strWave = "S0+-_S0++";
 const TString strFitFracWave = "D";
 
-const Bool_t isPlotA2CS = kFALSE;
+const Bool_t isPlotA2CS = kTRUE;
+const Bool_t isA2CSBootstrap = kTRUE;
+const Int_t NBootstrapSample = 100;
 const TString etaPiPlotterOutLogName = "etapi_plotter_output.log";
 const Double_t lum = 132.4; // pb^-1
 const Double_t lumPhase1 = 125.0; // pb^-1
@@ -89,7 +91,7 @@ void PlotFromFlatTree();
 void etaPiPlotter(TString dirFit, TString fitName, TString outName, TString ampString, Bool_t isAccCorr, TString ampFitFracString, Bool_t isPlotAllVar, Bool_t isPlotGenHist);
 vector<Double_t> GetAccCorrYield(TString fileName);
 vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint);
-void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotter, Bool_t isReadFitFracWave);
+vector<Double_t> ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotter, Bool_t isReadFitFracWave);
 
 // hist1DManager class for 1D histograms
 class Hist1DManager {
@@ -659,12 +661,17 @@ void drawHistPWA(){
         TGraphErrors *gA2CS = new TGraphErrors();
         TGraphErrors *gA2CSPhase1StatErr = new TGraphErrors();
         TGraphErrors *gA2CSPhase1SystErr = new TGraphErrors();
+        vector<Double_t> A2CSStatErrBootstrap={0.0,0.0,0.0,0.0,0.0};
+        
+        if (isA2CSBootstrap) A2CSStatErrBootstrap = ReadFitsForBootstrap(NBootstrapSample,kFALSE,kTRUE);
         for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
             TString fName = fitResultDir[iTBin] + etaPiPlotterOutLogName;
             vector<Double_t> accCorrYield = GetAccCorrYield(fName);
             Double_t dt = tMax[iTBin]-tMin[iTBin];
             Double_t dsigdt = accCorrYield[0]/(1000000*lum*dt*0.0565);
-            Double_t dsigdtStatErr = accCorrYield[1]/(1000000*lum*dt*0.0565);
+            Double_t dsigdtStatErr = 0.0;
+            if (isA2CSBootstrap) dsigdtStatErr = A2CSStatErrBootstrap[iTBin]/(1000000*lum*dt*0.0565);
+            else dsigdtStatErr = accCorrYield[1]/(1000000*lum*dt*0.0565);
             Double_t toffset = 0.005;
             gA2CS->AddPoint((tMin[iTBin]+tMax[iTBin])/2+toffset,dsigdt);
             gA2CS->SetPointError(iTBin,0,dsigdtStatErr);
@@ -709,8 +716,8 @@ void drawHistPWA(){
 
         TLegend *legA2CS = new TLegend(0.6,0.5,0.8,0.85);
         legA2CS->AddEntry(gA2CS_theory,"#splitline{TMD predictions}{E_{#gamma}=8.5 GeV}","f");
-        legA2CS->AddEntry(gA2CS,"#splitline{GlueX 2020}{E_{#gamma}=[8.0,8.6] GeV}","pl");
-        legA2CS->AddEntry(gA2CSPhase1SystErr,"#splitline{GlueX Phase-I}{E_{#gamma}=[8.2,8.8] GeV}","pl");
+        legA2CS->AddEntry(gA2CSPhase1SystErr,"#splitline{GlueX-I}{E_{#gamma}=[8.2,8.8] GeV}","pl");
+        legA2CS->AddEntry(gA2CS,"#splitline{GlueX-II}{E_{#gamma}=[8.0,8.6] GeV}","pl");
         legA2CS->AddEntry(gA2CSPhase1StatErr,"Statistical Unc.","f");
         legA2CS->SetTextSize(0.03);
         legA2CS->SetBorderSize(0);
@@ -719,8 +726,6 @@ void drawHistPWA(){
         gSystem->cd(outDir);
         cA2CS->SaveAs(Form("plot_A2CS_%s.pdf",extraTag.Data()));
     }
-    
-    ReadFitsForBootstrap(100,kFALSE,kTRUE);
 }
 
 void PlotFromFlatTree(){
@@ -1276,7 +1281,7 @@ vector<vector<Double_t>> ReadCSV(TString fileName, Bool_t isPrint){
     return vData;
 }
 
-void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool_t isReadFitFracWave){
+vector<Double_t> ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool_t isReadFitFracWave){
     cout << endl << "Reading fits for bootstrap" << endl;
     vector<TString> vBootstrapDir;
     for (auto const t: tBinString){
@@ -1306,6 +1311,7 @@ void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool
     TCanvas *c_a2AccCorrYieldRMS = new TCanvas("c_a2AccCorrYieldRMS","c_a2AccCorrYieldRMS",1200,800);
     c_a2AccCorrYieldRMS->Divide(3,2,0.00001,0.00001);
     TLatex *lLatex = new TLatex();
+    vector<Double_t> vA2CSStatErrBootstrap;
     for (Int_t iTBin=0;iTBin<NTBin;iTBin++){
         for (Int_t iNSample=0;iNSample<NSample;iNSample++){
             cout << "Reading " << vvFitBootstrapDir[iTBin][iNSample] << endl;
@@ -1325,6 +1331,9 @@ void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool
                     vector<Double_t> vAccCorrYield = GetAccCorrYield(fileName);
                     h1BootstrapAccCorrYieldT[iTBin]->Fill(vAccCorrYield[0]);
                     h1BootstrapAccCorrYieldRMST[iTBin]->SetBinContent(iNSample+1,h1BootstrapAccCorrYieldT[iTBin]->GetRMS());
+                    if (iNSample==NSample-1) {
+                        vA2CSStatErrBootstrap.push_back(vAccCorrYield[1]);
+                    }
                 }
             }
         }
@@ -1350,7 +1359,8 @@ void ReadFitsForBootstrap(Int_t NSample, Bool_t isRunEtaPiPlotterBootstrap, Bool
         lLatex->DrawLatexNDC(0.65,0.9,Form("%0.3f<t<%0.3f",tMin[iTBin],tMax[iTBin]));
     }
     c_a2AccCorrYield->SaveAs(Form("%s/plot_A2AccCorrYieldT_%s_%s.pdf",outDir.Data(),dataTag.Data(),extraTag.Data()));
-    c_a2AccCorrYieldRMS->SaveAs(Form("%s/plot_A2AccCorrYieldRMS_%s_%s.pdf",outDir.Data(),dataTag.Data(),extraTag.Data()));
+    if (isReadFitFracWave) c_a2AccCorrYieldRMS->SaveAs(Form("%s/plot_A2AccCorrYieldRMS_%s_%s.pdf",outDir.Data(),dataTag.Data(),extraTag.Data()));
+    return vA2CSStatErrBootstrap;
 }
 
 void gluex_style() {
