@@ -1,11 +1,11 @@
-const string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
-const string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/brufit_data/";
+string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
 const Bool_t isSplitDataD = kFALSE;
 const Bool_t isSplitBkgndD = kFALSE;
 const Bool_t isSplitAccD = kTRUE;
 const Bool_t isSplitDataMC = kFALSE;
 const Bool_t isSplitBkgndMC = kFALSE;
-const Bool_t isSplitAccMC = kFALSE;
+const Bool_t isSplitAccMC = kTRUE;
 const Bool_t isSplitGenMC = kFALSE;
 
 bool filterOmega(float omega, float Mpi0eta){
@@ -13,7 +13,7 @@ bool filterOmega(float omega, float Mpi0eta){
     return -29.0*atan(-1.05*Mpi0eta+2.78)+328 > omega;
 }
 
-void split_flat_kinematics(string otag, string itag){
+void split_flat_kinematics(string otag="", string itag=""){
     // ********************************************
     // THIS PROGRAM WILL SPLIT ROOT FILES INTO DIFFERENT BEAM ENERGY + T BINNINGS
     //    BOTH THE THROWN AND RECON VALUES WILL BE USED IN DETERMINING BINNING 
@@ -25,20 +25,21 @@ void split_flat_kinematics(string otag, string itag){
     //         USED FOR AMPLITUDE FITS WITH POLARIZATION
     // ********************************************
 
-    bool sumRuns=false;
+    bool sumRuns=true;
     bool forceSplitting=true; // Should we run the splitting again? Or should we just sum runs if sumRuns=true
-    bool remergePols=false; // should we remerge polarizations after splitting? 
+    bool remergePols=true; // should we remerge polarizations after splitting? 
+    bool brufit_data=true;
     
-    // string otag="_Phase1";
-    // string itag="_nominal_wPhotonSyst";
+    otag="Phase1_brufit";
+    itag="nominal_wPhotonSyst";
 
-    // string ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
-    // string ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
-    // vector<string> runs={"2017_1","2018_1","2018_8"};
+    ifolder="/d/grid17/ln16/dselector_v3/phase1_selected_v4/";
+    ofolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
+    vector<string> runs={"2017_1","2018_1","2018_8"};
 
     // string ifolder="/d/home/septian/EtaPi0Analysis/run/rootFiles/";
     bool ignorePolarization=false; // Kmatrix stuff has only one polarization, so ignore. No polarization in Flat MC so ignore also
-    vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
+    // vector<string> runs={"2019_11"};//{"2018_8"},"2018_1","2018_8"};
     vector<string> files;
     for (auto run: runs){
         if (isSplitDataD) files.push_back("D"+run+"_selected_"+itag+"_data_flat.root");
@@ -115,12 +116,27 @@ void split_flat_kinematics(string otag, string itag){
             TTree *newtree[5][nts][nms]; 
             int ip, it, im;
             ip=0;
+            
+            double cosTheta_eta_GJ;
+            double phi_eta_GJ_rad;
+            double Phi_rad;
+            double TWeight;
+            double DMpi0eta;
+
             for (auto const& pol: pols){ it=0;
                 for (auto const& t: ts){ im=0;
                     for (auto const& m: mpi0etas){
                         string floc=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/";
                         newfile[ip][it][im] = new TFile((floc+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+file).c_str(),"recreate");
-                        newtree[ip][it][im] = oldtree->CloneTree(0);
+                        if (!brufit_data) newtree[ip][it][im] = oldtree->CloneTree(0);
+                        else {
+                            newtree[ip][it][im] = new TTree("kin","kin");
+                            newtree[ip][it][im]->Branch("cosTheta_eta_gj",&cosTheta_eta_GJ,"cosTheta_eta_gj/D");
+                            newtree[ip][it][im]->Branch("phi_eta_gj",&phi_eta_GJ_rad,"phi_eta_gj/D");
+                            newtree[ip][it][im]->Branch("Phi",&Phi_rad,"Phi/D");
+                            newtree[ip][it][im]->Branch("Mpi0eta",&DMpi0eta,"Mpi0eta/D");
+                            newtree[ip][it][im]->Branch("Weight",&TWeight,"Weight/D");
+                        }
                         ++im;
                     } ++it;
                 } ++ip;
@@ -142,7 +158,11 @@ void split_flat_kinematics(string otag, string itag){
             float VH;
             bool pVH;
             float pVH2;
+            float cosTheta_eta_gj;
+            float phi_eta_gj;
+            float Phi;
             float weight;
+            bool isCorrectCombo;
             // Check to see if we have the right branches for the different data,bkgnd,acc,gen trees
             //    Small caveat - thrown branches ALWAYS exist even for data,bkgnd trees but the branch will only contain 0s
             bool has_recon_branches = (bool)oldtree->GetListOfBranches()->FindObject("Ebeam"); // returned object decays to a boolean
@@ -158,6 +178,9 @@ void split_flat_kinematics(string otag, string itag){
                 oldtree->SetBranchAddress("pVH",&VH);
                 oldtree->SetBranchAddress("vanHove_omega",&vanHove_omega);
             }
+            oldtree->SetBranchAddress("cosTheta_eta_gj",&cosTheta_eta_gj);
+            oldtree->SetBranchAddress("phi_eta_gj",&phi_eta_gj);
+            oldtree->SetBranchAddress("Phi",&Phi);
             oldtree->SetBranchAddress("Mpi0eta_thrown",&mpi0eta_thrown);
             oldtree->SetBranchAddress("mandelstam_t_thrown",&mandelstam_t_thrown);
             oldtree->SetBranchAddress("Ebeam_thrown",&Ebeam_thrown);
@@ -168,6 +191,9 @@ void split_flat_kinematics(string otag, string itag){
             bool isData=!has_thrown_branches*has_recon_branches; // does not have thrown but has recon branches
             bool isAcc=has_recon_branches*has_thrown_branches; // has both recon and thrown branches
             bool isGen=!has_recon_branches*has_thrown_branches; // does not have recon branches but has thrown branches
+
+
+            if (brufit_data*isAcc) oldtree->SetBranchAddress("isCorrectCombo",&isCorrectCombo);
 
             // ********************************************
             /////// FILL TREES IN THE CORRECT BINNING
@@ -201,7 +227,13 @@ void split_flat_kinematics(string otag, string itag){
                             weight = 0.0;
                             continue;
                         }
-                         newtree[pols[beamAngle]][it][im]->Fill();
+                        if (brufit_data*isAcc*!isCorrectCombo) continue;
+                        TWeight = weight;
+                        cosTheta_eta_GJ = cosTheta_eta_gj;
+                        phi_eta_GJ_rad = phi_eta_gj*3.14159265358979323846/180.0;
+                        Phi_rad = Phi*3.14159265358979323846/180.0;
+                        DMpi0eta = mpi0eta;
+                        newtree[pols[beamAngle]][it][im]->Fill();
                      } ++it;
                  }
             }
@@ -241,18 +273,18 @@ void split_flat_kinematics(string otag, string itag){
             for (auto const& m: mpi0etas){ 
                 for (int j=0; j<nFileTypes; ++j){ ip=0;
                     string remergePolCmd="hadd -f ";
-                    remergePolCmd+=ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"polALL_t"+t.first+"_m"+m.first+otag+"_";
+                    remergePolCmd+=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/"+"polALL_t"+t.first+"_m"+m.first+"_"+otag+"_";
                     remergePolCmd+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                     for (auto const& pol: pols){
                         string cmd;
                         string target;
                         for (int i=0; (int)i<runs.size(); ++i){
                             if (i==0){
-                                target=ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_";
+                                target=ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+otag+"_";
                                 target+=files[j][0]+(string)"TOT"+files[j].substr(runs[0].size()+1,files[j].size());
                                 cmd="hadd -f "+target;
                             }
-                            cmd+=" "+ofolder+"t"+t.first+"_m"+m.first+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+otag+"_"+files[nFileTypes*i+j];
+                            cmd+=" "+ofolder+"t"+t.first+"_m"+m.first+"_"+otag+"/"+"pol"+polstrings[ip]+"_t"+t.first+"_m"+m.first+"_"+files[nFileTypes*i+j];
                         }
                         cout << endl << cmd << endl;
                         gSystem->Exec(cmd.c_str()); 
