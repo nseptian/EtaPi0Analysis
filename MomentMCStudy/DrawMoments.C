@@ -11,7 +11,7 @@
 
 using json = nlohmann::json;
 
-int DrawMoments(){
+int DrawMoments(const TString rootFilePath, const TString outputTag){
     const TString outPdfDir = "/d/home/septian/EtaPi0Plot/";
     // import true moment values from json file
     const TString inputFilePath = "/d/grid17/septian/EtaPi0Analysis/MomentMCStudy/trueMomentValues.json";
@@ -80,7 +80,6 @@ int DrawMoments(){
     h->Draw("HIST");
 
     // import fit moment values from root file
-    const TString rootFilePath = "/d/grid17/septian/EtaPi0Analysis/MomentMCStudy/fitBruMomentsLM4/ResultsHSMinuit2.root";
     TFile *f = new TFile(rootFilePath.Data());
     if (!f->IsOpen()) {
         std::cerr << "Could not open the file!" << std::endl;
@@ -123,11 +122,19 @@ int DrawMoments(){
         // normalize H_0_0_0 to 1
         val /= 2.0;
         err /= 2.0;
-        fitVal.push_back(val);
-        fitErr.push_back(err);
-        fitMomentIndex.push_back(momentIndex);
-        fitL.push_back(L);
-        fitM.push_back(M);
+        if (branchName.Contains("H_")){
+            if (branchName.Contains("err")){
+                fitErr.push_back(err);
+            }
+            else {
+                fitVal.push_back(val);
+            }
+        }
+        if (fitErr.size() == fitVal.size()) {
+            fitMomentIndex.push_back(momentIndex);
+            fitL.push_back(L);
+            fitM.push_back(M);
+        }
     }
 
     std::cout << "== Printing fit moment values ==" << std::endl;
