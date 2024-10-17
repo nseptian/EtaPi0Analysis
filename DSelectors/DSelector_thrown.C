@@ -207,14 +207,14 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
    	      (eta_res.Vect()).Dot(y),
    	      (eta_res.Vect()).Dot(z) );
    	Float_t cosTheta_hel = angles.CosTheta();
-   	Float_t phi_hel = angles.Phi();
+   	Float_t phi_hel = angles.Phi()*radToDeg;
    	z = beam_res.Vect().Unit(); // CALCULATING FOR Gottfried-Jackson frame
    	x = y.Cross(z);
    	angles.SetXYZ( (eta_res.Vect()).Dot(x),
    	      (eta_res.Vect()).Dot(y),
    	      (eta_res.Vect()).Dot(z) );
    	Float_t cosTheta_gj = angles.CosTheta();
-   	Float_t phi_gj = angles.Phi();
+   	Float_t phi_gj = angles.Phi()*radToDeg;
     TVector3 eps(TMath::Cos(locPolarizationAngle*TMath::DegToRad()), TMath::Sin(locPolarizationAngle*TMath::DegToRad()), 0.0); // beam polarization vector
     Float_t Phi = TMath::ATan2(y.Dot(eps), beam_cm.Vect().Unit().Dot(eps.Cross(y)))*radToDeg;
     std::tuple<double, double> vh = dAnalysisUtilities.Calc_vanHoveCoord(recoil_cm,pi0_cm,eta_cm);
@@ -242,7 +242,8 @@ Bool_t DSelector_thrown::Process(Long64_t locEntry)
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_hel_thrown",cosTheta_hel); 
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("cosTheta_eta_gj_thrown",cosTheta_gj); 
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_hel_thrown",phi_hel); 
-			dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_gj_thrown",phi_gj); 
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("phi_eta_gj_thrown",phi_gj);
+			dFlatTreeInterface->Fill_Fundamental<Float_t>("Phi",Phi); 
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("Ebeam_thrown",beam_e); 
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_omega_thrown",omega*radToDeg);
 			dFlatTreeInterface->Fill_Fundamental<Float_t>("vanHove_x_thrown",vanHove_x);
